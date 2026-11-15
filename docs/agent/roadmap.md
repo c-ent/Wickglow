@@ -31,9 +31,9 @@ The order was updated on 2026-11-03 and is recorded in `progress.md`. #1, #4 and
 | 10  | Private circles (friends' candles)      | —       | Out (owner, 2026-11-10)     | —                                                         |
 | 11  | Focus rooms                             | —       | Out (owner, 2026-11-10)     | —                                                         |
 | 12  | Landing page                            | v2      | Done (owner, 2026-11-15) | Web build, APK on Google Drive, C1 cleared                |
-| 13  | First-run tour                          | v2      | Current (owner, 2026-11-15) | —                                                         |
+| 13  | First-run tour                          | v2      | Shipped 2026-11-15 (owner checked Android and desktop) | —                                                         |
 
-#1, #4 and #8 have shipped. #2 and #3 were removed. #6 and #7 are out. #9, #10 and #11 were dropped by the owner on 2026-11-10; their sections below are history only. #5 was dropped on 2026-11-10 and brought back on 2026-11-13 as the current feature.
+#1, #4, #5, #8, #12 and #13 have shipped (#5, #12 and #13 in November 2026). #2 and #3 were removed. #6 and #7 are out. #9, #10 and #11 were dropped by the owner on 2026-11-10; their sections below are history only. No item is current; the owner picks the next one.
 
 ## v2
 
@@ -125,7 +125,7 @@ Design: the owner's mockup (2026-11-15). A near-black violet page with Amber glo
 
 C1 in `docs/issues.md` (the unconfirmed videos) was fixed on 2026-11-15, so it no longer blocks a public launch. The APK link is in (2026-11-15).
 
-### 13. First-run tour — current (owner, 2026-11-15)
+### 13. First-run tour — shipped 2026-11-15
 
 Source: the owner. New users should be shown where the main parts of the app are.
 

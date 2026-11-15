@@ -8,15 +8,14 @@ v2
 
 ## Current feature
 
-First-run tour (roadmap #13), started 2026-11-15 (owner). The landing page (#12) is done (owner, 2026-11-15), APK link included. The Google Play release is on hold (owner, 2026-11-15).
+None. The first-run tour (#13) and the landing page (#12) shipped on 2026-11-15 (owner); see completed.md. The Google Play release is on hold (owner, 2026-11-15). The next feature is the owner's pick from the roadmap.
 
 ## Current goal
 
-New users see a short tour that points at the timer, music, ambient sounds, mood or scenes, tasks and progress on phone, tablet and desktop.
+None set. Pick the next roadmap item with the owner.
 
 ## Not yet completed
 
-- First-run tour (current), built 2026-11-15 and checked by the owner on Android and desktop the same day. See roadmap #13.
 - Google Play release: on hold (owner, 2026-11-15). The steps stay under Google Play deployment for when it resumes.
 - Review fixes 2026-11-15: no session can start while a sign-out runs, and sign-out stops when storage could not be read at launch. A state taken from another tab keeps that tab's task edit times. Gallery arrows keep counting past either end. Privacy policy: removed the wrong Android streaming sentence. Pixabay licence note now covers lightly changed copies.
 - Landing gallery 2026-11-15: the pixel-art meadow (`desktop.webp`) is now the first slide. The third slide is a new Music panel shot (`desktop-2.webp`, from the new `screenshots/desktop-2.png`) and replaces the Amber one. The phone shot beside the Android download (`mobile.webp`) is the new `screenshots/mobile.png`. The second slide is now a Tasks panel shot (`desktop-3.webp`, 1600x760, from the owner's new PNG) and replaces the Moonlit one.
