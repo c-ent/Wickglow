@@ -734,11 +734,12 @@ const styles = StyleSheet.create({
     filter: 'blur(140px)',
   },
   glowHero: {
-    top: 380,
-    width: 900,
-    height: 560,
-    backgroundColor: fade(colors.flame3, 0.26),
-    filter: 'blur(150px)',
+    // Spans the whole hero, from under the nav to the gallery heading.
+    top: 60,
+    width: 1500,
+    height: 1000,
+    backgroundColor: fade(colors.flame3, 0.3),
+    filter: 'blur(180px)',
   },
   glowRight: {
     top: 2100,
