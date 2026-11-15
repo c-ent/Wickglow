@@ -8,7 +8,7 @@
 // the first time the folder is opened.
 
 import { Directory, File, Paths } from 'expo-file-system';
-import { RemoteFile, isCompleteDownload, localFileName, remoteUrl } from '@/src/core/remote-scenes';
+import { RemoteFile, isCompleteDownload, localFileName, remoteUrl, retiredSceneNames } from '@/src/core/remote-scenes';
 
 const FOLDER = 'scenes';
 const PART = '.part';
@@ -35,6 +35,24 @@ function removePartials(folder: Directory): void {
     }
   } catch {
     // A leftover part file only takes space; it is replaced on the next download.
+  }
+}
+
+/**
+ * Deletes downloaded scenes that no scene in the app uses any more (a replaced
+ * or removed video), so they do not stay on the phone for good. Only files in
+ * the app's own scenes folder are touched.
+ */
+export function removeRetiredSceneFiles(inUse: readonly RemoteFile[]): void {
+  try {
+    const folder = scenesFolder();
+    const files = folder.list().filter((entry): entry is File => entry instanceof File);
+    const retired = new Set(retiredSceneNames(files.map((file) => file.name), inUse));
+    for (const file of files) {
+      if (retired.has(file.name)) file.delete();
+    }
+  } catch {
+    // A retired file only takes space; this runs again on the next start.
   }
 }
 

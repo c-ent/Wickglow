@@ -1,7 +1,7 @@
 import { Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold } from '@expo-google-fonts/figtree';
 import { Outfit_200ExtraLight, Outfit_300Light, Outfit_400Regular, Outfit_500Medium } from '@expo-google-fonts/outfit';
 import { useFonts } from 'expo-font';
-import React, { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
   Image,
   Platform,
@@ -15,7 +15,6 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type StyleProp,
-  type TextStyle,
   type ViewStyle,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -49,6 +48,7 @@ import {
 import { CalendarNotes, CalendarPreview, CandlesPreview, LevelPreview, MixerPreview, SyncPreview, TasksPreview } from './app-pieces';
 import { land } from './palette';
 import { APP_PATH } from './returning-visitor';
+import { SAMPLE_LEVEL, useIsClient, web } from './web-helpers';
 
 // The web landing page at `/` (roadmap #12); the web app is at /app. The static export renders
 // it to plain HTML, so it reads without JavaScript. Sizes use wrapping rows,
@@ -69,10 +69,6 @@ const TITLE = 'Wickglow: a calm lofi Pomodoro study timer';
 const DESCRIPTION =
   'A calm lofi Pomodoro study timer with XP, streaks, tasks and ambient sounds. Free for Android and the web.';
 
-/** Web-only CSS that React Native's style types do not list (gradients, clamp sizes). */
-function web(style: object): ViewStyle & TextStyle {
-  return style as ViewStyle & TextStyle;
-}
 
 /** True when this visitor allows motion. Starts false, so the server render and the first frame are still. */
 const MotionContext = createContext(false);
@@ -161,10 +157,6 @@ function Reveal({
   );
 }
 
-function subscribe() {
-  return () => {};
-}
-
 export function LandingPage() {
   useFonts({
     [fonts.time]: Outfit_200ExtraLight,
@@ -176,7 +168,7 @@ export function LandingPage() {
     [fonts.bodyMedium]: Figtree_500Medium,
     [fonts.bodySemibold]: Figtree_600SemiBold,
   });
-  const isClient = useSyncExternalStore(subscribe, () => true, () => false);
+  const isClient = useIsClient();
   const { width } = useWindowDimensions();
   const showWidgets = isClient && width >= 1180;
   const compact = isClient && width < 600;
@@ -637,7 +629,7 @@ function BentoCopy({ title, body }: { title: string; body: string }) {
 /** Four sample widgets around the hero: the app's own pieces, as decoration. */
 function HeroWidgets() {
   const motion = useContext(MotionContext);
-  const { level, xp, xpToNext } = HERO_SAMPLE;
+  const { level, left: xp, need: xpToNext } = SAMPLE_LEVEL;
   const ring = 22;
   const circumference = 2 * Math.PI * ring;
   const bars = [8, 14, 20, 12, 26, 18, 30, 16, 24, 10, 20, 14, 8];

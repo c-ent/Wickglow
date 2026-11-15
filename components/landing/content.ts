@@ -114,14 +114,12 @@ export const BENTO = {
 
 /**
  * The four sample widgets floating around the hero. They are decoration drawn
- * from the app's own pieces, not live data: the numbers are examples.
+ * from the app's own pieces, not live data: the numbers are examples. The level
+ * widget reads `SAMPLE_LEVEL` (`web-helpers.ts`), the same sample as the bento card.
  */
 export const HERO_SAMPLE = {
   time: '25:00',
   timeCaption: 'FOCUS · 1 OF 4',
-  level: 6,
-  xp: 92,
-  xpToNext: 350,
   streakTitle: 'Daily streak',
   streakCaption: '3 quests today',
   mixLabel: 'AMBIENT MIX',

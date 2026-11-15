@@ -1,6 +1,6 @@
 import Slider from '@react-native-community/slider';
-import React, { useSyncExternalStore } from 'react';
-import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { Candle } from '@/components/wickglow/features/clock/candle';
 import { LevelCardView } from '@/components/wickglow/features/progression/level-card';
 import { DayCell } from '@/components/wickglow/features/progression/month-calendar';
@@ -11,8 +11,8 @@ import { panelStyles as panel } from '@/components/wickglow/shared/panel-styles'
 import { MOODS, monthGrid } from '@/components/wickglow/theme';
 import { AMBIENT_SOUNDS } from '@/src/core/ambient';
 import type { DayHistory } from '@/src/core/types';
-import { levelInfo } from '@/src/core/xp';
 import { colors, fade, fonts } from '@/src/theme/tokens';
+import { SAMPLE_LEVEL, useIsClient, web } from './web-helpers';
 
 // The "What's inside" pictures on the web landing page. They are the app's own
 // pieces, drawn with the app's own components and styles, so they look exactly
@@ -21,20 +21,6 @@ import { colors, fade, fonts } from '@/src/theme/tokens';
 
 const AMBER = MOODS.find((mood) => mood.id === 'amber') ?? MOODS[0];
 const NO_TOUCH = 'none' as const;
-
-function subscribe() {
-  return () => {};
-}
-
-/** False on the server render, true in the browser: the animated pieces draw only there. */
-function useIsClient() {
-  return useSyncExternalStore(subscribe, () => true, () => false);
-}
-
-/** Web-only CSS that React Native's style types do not list. */
-function web(style: object): ViewStyle {
-  return style as ViewStyle;
-}
 
 const noop = () => {};
 
@@ -67,9 +53,6 @@ export function CandlesPreview({ times }: { times: readonly string[] }) {
     </View>
   );
 }
-
-// Level 6 with 92 of 350 XP into it, which is what 1092 total XP is in the app's own rules.
-const SAMPLE_LEVEL = levelInfo(1092);
 
 /** The app's level card (ring, name, XP bar), with the streak under it. */
 export function LevelPreview() {
@@ -169,11 +152,12 @@ export function MixerPreview() {
   );
 }
 
-// A fixed sample month: Nov 2026, today the 26th, with a week-long streak ending today.
+// A fixed sample month: Nov 2026, today the 26th, with a week-long streak ending
+// today. The 19th is left empty so the run is exactly SAMPLE_STREAK days (20th to 26th).
 const SAMPLE_NOW = new Date(2026, 10, 26, 12).getTime();
 const SAMPLE_MINUTES: Record<number, number> = {
   1: 50, 2: 25, 3: 75, 4: 25, 6: 100, 7: 50, 9: 25, 10: 60, 11: 90, 12: 30, 13: 25, 14: 120,
-  16: 50, 18: 75, 19: 25, 20: 60, 21: 50, 22: 90, 23: 25, 24: 120, 25: 75, 26: 50,
+  16: 50, 18: 75, 20: 60, 21: 50, 22: 90, 23: 25, 24: 120, 25: 75, 26: 50,
 };
 const SAMPLE_STREAK = 7;
 

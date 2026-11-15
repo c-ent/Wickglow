@@ -115,14 +115,14 @@ Source: the owner, for the portfolio link and ahead of the Play listing.
 Decided 2026-11-15:
 
 - On the web, `/` is the landing page (`app/index.web.tsx`, UI in `components/landing/`) and the web app is at `/app` (`app/app.tsx`). On Android and iOS, `/` stays the app (`app/index.tsx`). A visitor who has used the web app before is sent from `/` to `/app` by a script in the page head (`components/landing/returning-visitor.ts`); `/?home` shows the landing page anyway. `/download`, the first address, redirects to `/` (owner, 2026-11-15). The web build uses `"output": "static"`, so each route is pre-rendered to a static HTML page and reuses the theme tokens and fonts.
-- The app stays at `/` and visitors are not redirected to the landing page; it is the page to link to (portfolio, posts, the Play listing's website field).
+- `/` is the page to link to (portfolio, posts, the Play listing's website field). The first plan kept the app at `/` with no redirect; the owner moved the landing page to `/` the same day so search results show it.
 - The main button downloads the Android APK, hosted on the owner's Google Drive at first. Until the owner sends the link, `APK_URL` in `components/landing/content.ts` is a placeholder.
 - It goes live before the Google Play badge exists. When the Play listing is live, the badge is added and the APK button can be dropped or kept.
-- Screenshots: three desktop shots in one swipeable gallery ("See it in action") inside a Mac-style window (title bar with three dots, no address bar, arrows, dots), the window the same shape as the screenshots (1920 x 911), Moonlit first (`GALLERY` in `content.ts`). The phone shot sits beside the Android download in the download card (`PHONE_SHOT`). WebP files are in `assets/landing/`.
+- Screenshots: three desktop shots in one swipeable gallery ("See it in action") inside a browser-style window (three dots and an address pill showing `GALLERY_ADDRESS`, arrows, scene tabs with a one-line caption per slide, a warm glow beneath), up to 1200 wide (wider than the 1040 text column), the screen area the same shape as the screenshots, Moonlit first (`GALLERY` in `content.ts`). The phone shot sits beside the Android download in the download card (`PHONE_SHOT`). WebP files are in `assets/landing/`.
 
 Design: the owner's mockup (2026-11-15). A near-black violet page with Amber glows and the flame colour as the only accent. Nav (Features, Android, Open the app); hero "Get the work done." with four floating sample widgets (timer, level, streak, ambient mix; sample numbers, drawn only on windows 1180 wide or more); a slim promise bar (Free, no ads or tracking, no account needed, no harsh alarm); a screenshot section; a "What's inside" bento grid whose pictures are the app's own components fed sample values (`components/landing/app-pieces.tsx`: `Candle`, `LevelCardView`, the task row pieces, the mixer styles, `DayCell`; the app exports `CheckBox`, `FocusButton`, `taskListStyles`, `DayCell` and `LevelCardView` for this); a download card; footer links to `/privacy`, `/delete-account` and the GitHub repo. Page-only colours are in `components/landing/palette.ts`; the rest come from the tokens.
 
-Blocks a public launch: C1 in `docs/issues.md`. The unconfirmed videos are served from the website to both the web app and the APK.
+C1 in `docs/issues.md` (the unconfirmed videos) was fixed on 2026-11-15, so it no longer blocks a public launch. What is left is the APK link.
 
 ## v3 (dropped)
 

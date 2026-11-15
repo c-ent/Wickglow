@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { STORAGE_KEY } from '@/components/wickglow/domain/saved-state';
+import { LEGACY_STORAGE_KEY, STORAGE_KEY } from '@/components/wickglow/domain/saved-state';
 
 // On the web, `/` is the landing page and `/app` is the app. Someone who has
 // used the web app before skips the landing page: a small script in the page
@@ -8,15 +8,21 @@ import { STORAGE_KEY } from '@/components/wickglow/domain/saved-state';
 // mark, so they always see the landing page.
 //
 // The mark is set when `/app` opens. Visitors from before the mark existed are
-// recognised by the app's own saved state. `/?home` shows the landing page anyway.
+// recognised by the app's own saved state (current or pre-rename key). The
+// script also runs on `/download`, the landing page's first address, which
+// otherwise redirects to `/` inside the page, after this script has run.
+// `/?home` shows the landing page anyway. Query and hash are carried over.
 
 /** Set in this browser once the web app has been opened. */
 export const APP_VISITED_KEY = 'wickglow:app-visited';
 
 export const APP_PATH = '/app';
 
+/** The addresses that show the landing page, so the ones a returning visitor skips. */
+const LANDING_PATHS = ['/', '/download'];
+
 /** Inline script for the page head. Plain ES5, wrapped in try: storage can be blocked. */
-export const RETURNING_VISITOR_SCRIPT = `try{var s=window.localStorage;if(location.pathname==='/'&&!/[?&]home(=|&|$)/.test(location.search)&&(s.getItem('${APP_VISITED_KEY}')||s.getItem('${STORAGE_KEY}'))){location.replace('${APP_PATH}'+location.hash)}}catch(e){}`;
+export const RETURNING_VISITOR_SCRIPT = `try{var s=window.localStorage,p=location.pathname.replace(/\\/+$/,'')||'/';if(${JSON.stringify(LANDING_PATHS)}.indexOf(p)>=0&&!/[?&]home(=|&|$)/.test(location.search)&&(s.getItem('${APP_VISITED_KEY}')||s.getItem('${STORAGE_KEY}')||s.getItem('${LEGACY_STORAGE_KEY}'))){location.replace('${APP_PATH}'+location.search+location.hash)}}catch(e){}`;
 
 /** Marks this browser as a returning visitor. Call when the web app opens. */
 export function markAppVisited(): void {

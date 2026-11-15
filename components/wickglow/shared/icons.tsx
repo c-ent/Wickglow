@@ -62,10 +62,8 @@ export const UserIcon = stroked(Lucide.User, 18);
 export const BellIcon = stroked(Lucide.Bell);
 export const LockIcon = stroked(Lucide.Lock);
 export const ShieldIcon = stroked(Lucide.Shield);
-export const WavesIcon = stroked(Lucide.Waves);
 export const CheckIcon = stroked(Lucide.Check, 14);
 export const ChevronLeftIcon = stroked(Lucide.ChevronLeft, 22);
-export const MonitorSmartphoneIcon = stroked(Lucide.MonitorSmartphone, 26);
 
 export const PlayIcon = filled(Lucide.Play, 18, colors.textInverse);
 export const PauseIcon = filled(Lucide.Pause, 18, colors.textInverse);

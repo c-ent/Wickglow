@@ -53,7 +53,9 @@ None right now.
 
 ## Still to check
 
-Nothing. The owner checked everything on 2026-11-15: two-device sync, ambient sounds with the screen off, own music files (no duplicate copy), timer controls, music source switching, the Scenes panel, the landing page at phone width, the desktop stream player and the tablet side column spacing.
+- Retired scene clean-up (2026-11-15, from a code review): on launch the app deletes downloaded scenes no longer in `VIDEOS` or `PIXEL_ART` (`removeRetiredScenes`). On a phone that had the old Cyberpunk Desk or Night Hills downloaded, check they are gone and the other downloads stay.
+
+Everything else was checked by the owner on 2026-11-15: two-device sync, ambient sounds with the screen off, own music files (no duplicate copy), timer controls, music source switching, the Scenes panel, the landing page at phone width, the desktop stream player and the tablet side column spacing.
 
 ## Tooling notes
 

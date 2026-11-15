@@ -59,7 +59,7 @@ Break wax (`breakWax`) is separate and stays cool on every mood.
 
 ## Icons
 
-Stroke icons, 1.8 stroke width, 20dp. The library is Lucide: `lucide-react-native` on Android and iOS, `lucide-react` on web. Phosphor is the fallback if a weight Lucide lacks is needed. Installed 2026-11-14: `shared/lucide.ts` / `lucide.web.ts` pick the package (keep their two lists the same), and screens import from `shared/icons.tsx` only. The Google mark and the animated mixer and equalizer icons stay hand-drawn. The web landing page (`components/landing`, roadmap #12) adds Bell, Lock, Shield, Waves and Check, and has its own darker page colours in `components/landing/palette.ts`; it is not part of the app's theme.
+Stroke icons, 1.8 stroke width, 20dp. The library is Lucide: `lucide-react-native` on Android and iOS, `lucide-react` on web. Phosphor is the fallback if a weight Lucide lacks is needed. Installed 2026-11-14: `shared/lucide.ts` / `lucide.web.ts` pick the package (keep their two lists the same), and screens import from `shared/icons.tsx` only. The Google mark and the animated mixer and equalizer icons stay hand-drawn. The web landing page (`components/landing`, roadmap #12) adds Bell, Lock, Shield and Check, and has its own darker page colours in `components/landing/palette.ts`; it is not part of the app's theme.
 
 ## Typography
 

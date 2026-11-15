@@ -41,7 +41,7 @@ Test on a development build, not Expo Go. Background audio and notifications beh
 ## The shape of the code
 
 ```
-app/                    Expo Router routes. Thin: index renders WickglowScreen, download renders LandingPage
+app/                    Expo Router routes. Thin: index is the app on Android and iOS, index.web is the landing page, app is the web app (/app), download redirects to /
 components/landing/     The web landing page at / (web only); the web app is at /app
   content.ts            APK link, screenshots and copy. Change links and text here
   app-pieces.tsx        The "What's inside" pictures, drawn by the app's own components with sample values
@@ -185,7 +185,7 @@ The current Google Play checklist is in [progress.md](agent/progress.md#google-p
 - **`react-native-web` gaps.** Some `react-native` exports are `undefined` on web even though they typecheck. Check the browser, not just `tsc`. `useAnimatedValue` is the known case and has a local hook.
 - **`+html.tsx`** must render `headNodes` and `bodyNodes`, or the exported web page has no scripts and stays on the loading screen.
 - **SFX file names are case-sensitive.** Keep `chime.mp3` (lower case, which Android notification sounds require) and `SessionEndChime.MP3` exactly as named. Metro resolves paths case-sensitively, so a file that only differs in case breaks `npx expo export`, even though Windows shows it as the same file.
-- **Scene files** in `public/scenes/` carry a version folder and a byte size in the catalog. A re-encoded file needs a new version and its new size, or the download size check rejects it.
+- **Scene files** in `public/scenes/` carry a version folder and a byte size in the catalog. A re-encoded or replaced file needs a new path and its new size: otherwise the download size check rejects it, and phones that already hold the old file keep playing it. On launch the app deletes downloads that no scene uses any more.
 - **Uncleared videos.** Some background videos aren't cleared for distribution yet (issue C1 in [issues.md](issues.md)). Check [BACKGROUND_LICENSES.md](../BACKGROUND_LICENSES.md) before wiring in a scene.
 - **`npm audit fix --force`** downgrades Firebase. The `overrides` in `package.json` already handle the reported issues.
 - **`.agents/skills/`** files are hash-pinned in `skills-lock.json`. Local edits get reverted.

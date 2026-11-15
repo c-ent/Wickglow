@@ -1,6 +1,6 @@
 # Background Video Attribution
 
-This project uses third-party video assets for full-screen ambient backgrounds in `assets/backgrounds/videos/`. Unlike `MUSIC_LICENSES.md`, these are not yet all cleared — see Status below each table.
+This project uses third-party video assets for full-screen ambient backgrounds: Classic is bundled from `assets/backgrounds/videos/`, the rest are served from `public/scenes/v1/videos/`. As of 2026-11-15 every video in the app is cleared; the dated status notes further down are history.
 
 **Summary (2026-11-15).** Cleared: Classic and Cyberpunk Desk (Pixabay), Frog Pond, Snowy Sled and Mossy Branch (Abi Toads' permission), Meadow and Aurora (CraftPix). `night_hills.mp4` (MoeWalls, a night version of the Windows XP "Bliss" hills with a watermark, no licence from the creator) was removed on 2026-11-15 at the owner's request: out of the app, the site and `original/`.
 
@@ -14,13 +14,11 @@ Added 2026-11-11, compressed the same day from raw exports (up to 71MB each) dow
 
 `cyberpunk_desk.mp4` (Wallper "Cyber Hacker" by "biggjohnson2k", `9288727d…`) was replaced on 2026-11-15 by a Pixabay video; see "Pixabay videos" below. The original stays in `assets/backgrounds/videos/original/` and is no longer served.
 
-**Status (2026-11-11).** On 2026-11-12 the owner had `desktop_windows.mp4` ("Blue,Lofi boy"), `cherry_blossom_cottage.mp4` ("Spring lofi"), `twilight_skyline.mp4` (owner-made) and `rainy_cottage.mp4` ("Lofi") removed from the app, and later the same day `flower_hill_girl.mp4` ("Field of cherry blossom"). The remaining two are wired into the desktop `ScenePicker`'s "Videos" group (`components/wickglow/features/background/video-art.ts`), each with a thumbnail in `assets/backgrounds/thumbnails/`. Both came from Wallper; the owner is shipping them on Wallper's permission (below), not on a licence from each artist. An earlier note here said three carried a moewalls.com watermark; the originals were later traced to Wallper.
+**Status (2026-11-11, history; superseded 2026-11-15 by the artist's permission and the Pixabay replacement above).** On 2026-11-12 the owner had `desktop_windows.mp4` ("Blue,Lofi boy"), `cherry_blossom_cottage.mp4` ("Spring lofi"), `twilight_skyline.mp4` (owner-made) and `rainy_cottage.mp4` ("Lofi") removed from the app, and later the same day `flower_hill_girl.mp4` ("Field of cherry blossom"). The remaining two are wired into the desktop `ScenePicker`'s "Videos" group (`components/wickglow/features/background/video-art.ts`), each with a thumbnail in `assets/backgrounds/thumbnails/`. Both came from Wallper; the owner is shipping them on Wallper's permission (below), not on a licence from each artist. An earlier note here said three carried a moewalls.com watermark; the originals were later traced to Wallper.
 
 **Sources found 2026-11-11.** Six of the original filenames are Wallper wallpaper ids (`wallper.app`, a paid live-wallpaper app for Mac); the sitemap lists them under `cdn.wallper.app/wallper-user-generated/`, and each video's length matches its page. The names above are Wallper usernames, not confirmed artists. Wallper's terms (`https://www.wallper.app/legal/terms`) say uploaders keep their rights and license them to Wallper only, and give app users a licence to the app on up to three personal Macs, with no right to redistribute. Those terms alone do not clear the videos for Wickglow; see Wallper's permission below.
 
-**Wallper permission, 2026-11-11.** The owner asked Wallper about the six Wallper videos above and reports that Wallper said they are okay to use. Record Wallper's reply here word for word, with its date and where it came from (email or support chat):
-
-> _paste Wallper's reply here_
+**Wallper permission, 2026-11-11 (history).** The owner asked Wallper about the six Wallper videos above and reports that Wallper said they are okay to use. The reply was never put on file, and no video in the app relies on it any more: the remaining Wallper uploads are cleared by their artist, Abi Toads, and Cyberpunk Desk was replaced by a Pixabay video.
 
 Wallper's own terms say uploaders keep ownership and license their content to Wallper "in connection with the Service", so Wallper's yes is good-faith permission from the platform, not a licence from each artist. If an artist objects, remove that video in the next release.
 
@@ -33,7 +31,7 @@ Added 2026-11-12 from raw exports in `assets/backgrounds/videos/original/` (most
 | `snowy_sled.mp4` (`2d0d311f-1486-414b-aa40-fc098ed96745.mp4`) | 11s | **Cleared: permission from the artist.** The owner confirmed on 2026-11-15 that it is Abi Toads' work and covered by her "Go for it! I would be absolutely honored~" | Artist: Abi Toads (Instagram `abi.toads`). Hand-painted snowy slope, a small frog on a sled |
 | `mossy_branch.mp4` (`5037c286-9372-4693-8679-dcf3d73134db.mp4`) | 35s | **Cleared: permission from the artist.** The owner confirmed on 2026-11-15 that it is Abi Toads' work and covered by the same reply | Artist: Abi Toads (Instagram `abi.toads`). Close-up of a moss-covered branch |
 
-**Status (2026-11-12).** All three are in the desktop `ScenePicker`'s "Videos" group. All three came from Wallper. The Wallper permission above was about the six 2026-11-11 videos; confirm with Wallper that it covers these three too, and add each Wallper page link, before a release build.
+**Status (2026-11-15).** Snowy Sled and Mossy Branch are in the `ScenePicker`'s "Videos" group, cleared by Abi Toads' permission (rows above). The third video of this batch, Night Hills, was removed on 2026-11-15.
 
 ## Pixel-art pair
 

@@ -10,7 +10,7 @@ import {
   Outfit_500Medium,
 } from '@expo-google-fonts/outfit';
 import { useFonts } from 'expo-font';
-import React, { useSyncExternalStore } from 'react';
+import React, { useEffect, useSyncExternalStore } from 'react';
 import { Platform, useWindowDimensions, View } from 'react-native';
 import { colors, fonts } from '@/src/theme/tokens';
 import { layoutForWindow } from '@/components/wickglow/features/layout';
@@ -18,9 +18,13 @@ import { DesktopWickglow } from '@/components/wickglow/screens/desktop';
 import { MobileWickglow } from '@/components/wickglow/screens/mobile';
 import { TabletWickglow } from '@/components/wickglow/screens/tablet';
 import { WickglowProvider } from '@/components/wickglow/logic';
+import { PIXEL_ART } from '@/components/wickglow/features/background/pixel-art';
+import { removeRetiredScenes } from '@/components/wickglow/features/background/scene-downloads';
+import { VIDEOS } from '@/components/wickglow/features/background/video-art';
 
 /**
- * The single screen of the app (rendered by app/index.tsx). It does only two
+ * The single screen of the app (rendered by app/index.tsx on Android and iOS,
+ * app/app.tsx on the web). It does only two
  * things: load fonts, and pick which of the three layouts to show for the
  * current window size. Everything else lives in the layouts under `screens/`.
  */
@@ -50,6 +54,11 @@ export function WickglowScreen() {
     [fonts.bodyMedium]: Figtree_500Medium,
     [fonts.bodySemibold]: Figtree_600SemiBold,
   });
+  // Once per launch: delete downloaded scenes that were replaced or removed
+  // (no-op on web, which streams). Nothing is downloading yet at this point.
+  useEffect(() => {
+    removeRetiredScenes([...VIDEOS, ...PIXEL_ART].map((item) => item.source));
+  }, []);
   // useWindowDimensions re-renders on resize and device rotation.
   const { width, height } = useWindowDimensions();
   const layout = layoutForWindow(width, height, Platform.OS === 'web' ? 'web' : 'native');

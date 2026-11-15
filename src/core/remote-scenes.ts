@@ -66,6 +66,16 @@ export function localFileName(file: RemoteFile): string {
   return name || 'scene';
 }
 
+/**
+ * Downloaded files that no scene uses any more: a replaced video (its old
+ * version path) or a removed one. `present` is the names in the scenes folder;
+ * `.part` files are left alone, since their own clean-up handles them.
+ */
+export function retiredSceneNames(present: readonly string[], inUse: readonly RemoteFile[]): string[] {
+  const keep = new Set(inUse.map(localFileName));
+  return present.filter((name) => !name.endsWith('.part') && !keep.has(name));
+}
+
 /** A file size as a short label: `9.4 MB`, or `0.6 MB` for a small one. */
 export function formatMegabytes(bytes: number): string {
   const mb = Math.max(0, bytes) / (1024 * 1024);

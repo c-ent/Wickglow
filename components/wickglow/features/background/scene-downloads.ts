@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { downloadSceneFile, sceneFileUri } from '@/components/wickglow/domain/scene-files';
+import { downloadSceneFile, removeRetiredSceneFiles, sceneFileUri } from '@/components/wickglow/domain/scene-files';
 import { RemoteFile, downloadFraction, remoteScenesEnabled } from '@/src/core/remote-scenes';
 
 // Where each background video comes from, and whether a remote one is on the
@@ -88,6 +88,14 @@ export function useSceneSource(source: SceneSource): number | string | null {
   const status = useSceneStatus(source);
   if (!isRemote(source)) return source;
   return status.kind === 'ready' ? sceneFileUri(source) : null;
+}
+
+/**
+ * Deletes downloads that none of these scenes use any more. Pass every scene
+ * the app offers; call once at start, before any download begins.
+ */
+export function removeRetiredScenes(sources: readonly SceneSource[]): void {
+  removeRetiredSceneFiles(sources.filter(isRemote));
 }
 
 /**

@@ -13,7 +13,6 @@ export {
   Image,
   Lock,
   Maximize,
-  MonitorSmartphone,
   Music,
   Pause,
   PenLine,
@@ -33,6 +32,5 @@ export {
   Upload,
   User,
   Volume1,
-  Waves,
   X,
 } from 'lucide-react';
