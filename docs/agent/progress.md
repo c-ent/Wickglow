@@ -8,7 +8,7 @@ v2
 
 ## Current feature
 
-First-run tour (roadmap #13), started 2026-11-15 (owner). The landing page (#12) is done (owner, 2026-11-15), APK link included. The Google Play release steps are owner tasks.
+First-run tour (roadmap #13), started 2026-11-15 (owner). The landing page (#12) is done (owner, 2026-11-15), APK link included. The Google Play release is on hold (owner, 2026-11-15).
 
 ## Current goal
 
