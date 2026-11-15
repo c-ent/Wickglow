@@ -780,9 +780,9 @@ const styles = StyleSheet.create({
   questsScroll: {
     maxWidth: 450,
   },
-  // Up to 900, the same as Progress (owner, 2026-11-15).
+  // Up to 750 (owner, 2026-11-15).
   tasksScroll: {
-    maxWidth: 900,
+    maxWidth: 750,
   },
   // Progress, Quests and Tasks: the card itself, capped at the space above the
   // dock. It clips, so its rounded corners hold while the body scrolls.

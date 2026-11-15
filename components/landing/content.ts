@@ -45,12 +45,12 @@ export const GALLERY: readonly GallerySlide[] = [
     ratio: 1600 / 759,
   },
   {
-    id: 'moonlit',
-    label: 'Moonlit',
-    caption: 'A big, quiet timer over a moonlit night with falling rain.',
+    id: 'tasks',
+    label: 'Tasks',
+    caption: 'Break study into tasks and subtasks, then pick one to focus on under the timer.',
     source: require('@/assets/landing/desktop-3.webp') as ImageSourcePropType,
-    alt: 'Wickglow on desktop: a 25:00 focus timer over a dark blue Moonlit scene with falling rain',
-    ratio: 1600 / 759,
+    alt: 'Wickglow on desktop with the Tasks panel open: a task split into four subtasks above a finished one',
+    ratio: 1600 / 760,
   },
   {
     id: 'music',
