@@ -18,14 +18,22 @@ A web landing page that explains Wickglow and offers the Android APK for downloa
 
 - Landing page (current). See roadmap #12.
 - Google Play release. See Google Play deployment.
+- EAS preview and production environments have no Firebase vars yet (only development does), so a `preview` APK build cannot reach Firebase until the seven vars are ticked for both on expo.dev. See `docs/feature/firebase.md`, Owner tasks.
+- Review fixes 2026-11-15: no session can start while a sign-out runs, and sign-out stops when storage could not be read at launch. A state taken from another tab keeps that tab's task edit times. Gallery arrows keep counting past either end. Privacy policy: removed the wrong Android streaming sentence. Pixabay licence note now covers lightly changed copies.
+- Landing gallery 2026-11-15: the pixel-art meadow (`desktop.webp`) is now the first slide. The third slide is a new Music panel shot (`desktop-2.webp`, from the new `screenshots/desktop-2.png`) and replaces the Amber one.
 - C1 fixed 2026-11-15: every video left is cleared, and Night Hills was removed. See `BACKGROUND_LICENSES.md`. The landing page now waits only on the APK link.
+- App to landing page link 2026-11-15 (owner): web only, a quiet "About Wickglow" link as the last line of Timer settings (phone Timer tab, tablet side column, desktop settings card). It opens `/?home` (`LANDING_HOME_PATH`) in a new tab, so the returning-visitor script does not send it back and a running session keeps going.
 
 ## Open questions
 
 Landing page (roadmap #12). Built 2026-11-15. Moved the same day (owner): the landing page is `/` on the web and the web app is `/app`; returning visitors skip to `/app`; `/download` redirects to `/`. Android still opens the app at `/`. See roadmap #12. Waiting on the owner for item 1; item 2 is done:
 
 1. The Google Drive share link for the APK (set to "Anyone with the link"). Replace `APK_URL` in `components/landing/content.ts`; it is a placeholder (`https://drive.google.com/`) until then. Drive shows a "can't scan for viruses" page before files over about 100MB download, so the button may land there first.
-2. Screenshots are in (2026-11-15): WebP copies in `assets/landing/`, made from `assets/images/screenshots/` (about 80KB instead of 1.8MB), shown by `GALLERY` (three desktop shots in a Mac-style window) and `PHONE_SHOT` (beside the download) in `content.ts`. Replace a file in `assets/landing/` to change one. Gallery redesigned 2026-11-15: wider than the text column (1200), browser title bar with an address pill (`GALLERY_ADDRESS`), warm glow under the window, scene tabs plus a per-slide `caption` instead of dots.
+2. Screenshots are in (2026-11-15): WebP copies in `assets/landing/`, made from `assets/images/screenshots/` (about 80KB instead of 1.8MB), shown by `GALLERY` (three desktop shots in a Mac-style window) and `PHONE_SHOT` (beside the download) in `content.ts`. Replace a file in `assets/landing/` to change one. Gallery redesigned 2026-11-15: on the same 1040 column as the other sections (first built at 1200; narrowed the same day so its edges line up), browser title bar with an address pill (`GALLERY_ADDRESS`), warm glow under the window, scene tabs plus a per-slide `caption` instead of dots.
+
+Sign-out with a session running: decided 2026-11-15 (owner), built. Signing out resets a running or paused session to idle and cancels its alarm (the Reset button's `run.reset`) before the device is cleared, so a session begun under one account can never finish into the next account's progress.
+
+Review fixes 2026-11-15: landing previews built from app buttons (tasks, calendar) are `inert`; a gallery tab press clears a pending arrow target; `adopt` (another tab's save) becomes the save queue's saved state and drops a waiting retry, a late failure of an older write, and a waiting local edit (the store shows the adopted state, so what is written matches what is shown); a `storage` event is only taken while storage still holds its value, so an old event cannot undo a newer local commit (`domain/other-tab.ts`); sign-out waits for the cleared state to be written and does not sign out (toast) if it fails; a change of account drops a waiting sign-out, and a sign-out overtaken while the device clears does not sign out (sync restarts if the same account is still signed in and no other sign-out runs); on a phone or tablet a task's controls wrap under the title rather than squeezing it below 120; the user guide and privacy policy say subtasks sync (their shown/hidden state stays local) and name streaming and scene downloads as the network exceptions without an account; a session record's day must be a real, unpadded `calendarKey` day.
 
 ## Google Play deployment
 
@@ -59,7 +67,7 @@ Everything else was checked by the owner on 2026-11-15: two-device sync, ambient
 
 ## Tooling notes
 
-- Clean-up (2026-11-15): code comments reviewed (outdated ones fixed, tutorial-style and "(owner, date)" notes removed); leftovers removed (`task-panel.tsx`, `streamCardHeight`); all backward compatibility removed (Lumifi save key and alarm id, old notification channels, the no-log and `videoBg: true` save conversions). Rules for both are in `conventions.md`. The synced Firestore format keeps its `d_` day records and optional `day`/`epoch` handling; changing that is a schema decision for the owner.
+- Clean-up (2026-11-15): code comments reviewed (outdated ones fixed, tutorial-style and "(owner, date)" notes removed); leftovers removed (`task-panel.tsx`, `streamCardHeight`); all backward compatibility removed (Lumifi save key and alarm id, old notification channels, the no-log and `videoBg: true` save conversions). Rules for both are in `conventions.md`. Firestore (owner, 2026-11-15): `d_` day-total records removed, and `day` is required on every session record, in the code, the rules and the rules tests (22 pass in the emulator). **Owner task: redeploy the rules** (`npm run deploy:rules`). Day totals and sessions without `day` already in the account are ignored from now on, so XP, streak and calendar lose that history.
 
 - Docs (2026-11-15): added `docs/user-guide.md` (for users) and `docs/developer-guide.md` (for contributors; links to the agent docs instead of copying them), linked from `README.md`. Keep both in step when a user-visible feature or the code layout changes.
 

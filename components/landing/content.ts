@@ -37,14 +37,6 @@ export const GALLERY_ADDRESS = 'wickglow.vercel.app';
 
 export const GALLERY: readonly GallerySlide[] = [
   {
-    id: 'moonlit',
-    label: 'Moonlit',
-    caption: 'A big, quiet timer over a moonlit night with falling rain.',
-    source: require('@/assets/landing/desktop-3.webp') as ImageSourcePropType,
-    alt: 'Wickglow on desktop: a 25:00 focus timer over a dark blue Moonlit scene with falling rain',
-    ratio: 1600 / 759,
-  },
-  {
     id: 'meadow',
     label: 'Pixel art',
     caption: 'Pick a scene to study in, like a rainy pixel-art meadow.',
@@ -53,12 +45,20 @@ export const GALLERY: readonly GallerySlide[] = [
     ratio: 1600 / 759,
   },
   {
-    id: 'amber',
-    label: 'Amber',
-    caption: 'The warm, dark Amber scene, with the Scenes picker open.',
-    source: require('@/assets/landing/desktop-2.webp') as ImageSourcePropType,
-    alt: 'Wickglow on desktop in the dark Amber scene, with the Scenes picker open',
+    id: 'moonlit',
+    label: 'Moonlit',
+    caption: 'A big, quiet timer over a moonlit night with falling rain.',
+    source: require('@/assets/landing/desktop-3.webp') as ImageSourcePropType,
+    alt: 'Wickglow on desktop: a 25:00 focus timer over a dark blue Moonlit scene with falling rain',
     ratio: 1600 / 759,
+  },
+  {
+    id: 'music',
+    label: 'Music',
+    caption: 'Play the built-in lofi playlist, or paste a Spotify, YouTube or Apple Music link.',
+    source: require('@/assets/landing/desktop-2.webp') as ImageSourcePropType,
+    alt: 'Wickglow on desktop with the Music panel open: the lofi playlist beside a pasted Spotify playlist',
+    ratio: 1600 / 756,
   },
 ];
 
