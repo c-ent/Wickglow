@@ -2,14 +2,17 @@
 
 This project uses third-party video assets for full-screen ambient backgrounds in `assets/backgrounds/videos/`. Unlike `MUSIC_LICENSES.md`, these are not yet all cleared — see Status below each table.
 
+**Summary (2026-11-15).** Cleared: Classic and Cyberpunk Desk (Pixabay), Frog Pond, Snowy Sled and Mossy Branch (Abi Toads' permission), Meadow and Aurora (CraftPix). `night_hills.mp4` (MoeWalls, a night version of the Windows XP "Bliss" hills with a watermark, no licence from the creator) was removed on 2026-11-15 at the owner's request: out of the app, the site and `original/`.
+
 ## Scene loops (2026-11-11 batch)
 
 Added 2026-11-11, compressed the same day from raw exports (up to 71MB each) down to 1080p/30fps H.264 (CRF 26, re-encoded 2026-11-12 at CRF 20 from the originals in `videos/original/`, keeping 24fps sources at 24; audio stripped since the app's own audio system handles sound), then renamed from their original UUID-style export names to the descriptive names below. Compression and renaming did not change ownership or licensing — the license for each file still needs to be filled in here before it ships.
 
 | File (was) | Length | License | Source / artist |
 | :--- | :----- | :------ | :--------------- |
-| `cyberpunk_desk.mp4` (`9288727d-4d3a-4830-91ad-09ca1f300a24.mp4`) | 5s | Permission from Wallper: the owner asked Wallper and reports they said these may be used (2026-11-11). Exact reply not on file yet; paste it below. Wallper is the platform, not the artist | "Cyber Hacker", uploaded by "biggjohnson2k": https://www.wallper.app/wallpaper/scifi/cyber-hacker-9288727d-4d3a-4830-91ad-09ca1f300a24 |
-| `frog_lily_pond.mp4` (`ad249c50-39c0-48f4-b72d-02e9e4c4afe9.mp4`) | 22s | Owner says it is fine to use, and Wallper said it may be used (2026-11-11). No written permission from the artist on file yet | Artist: Abi Toads (Instagram `abi.toads`). Downloaded as "Frog Relaxing in Pond", uploaded to Wallper as "Henry Hui": https://www.wallper.app/wallpaper/animals/frog-relaxing-in-pond-ad249c50-39c0-48f4-b72d-02e9e4c4afe9 |
+| `frog_lily_pond.mp4` (`ad249c50-39c0-48f4-b72d-02e9e4c4afe9.mp4`) | 22s | **Cleared: permission from the artist.** Abi Toads replied "Go for it! I would be absolutely honored~" (reported by the owner, 2026-11-15). Keep a screenshot of the message with her account name and date | Artist: Abi Toads (Instagram `abi.toads`). Downloaded as "Frog Relaxing in Pond", uploaded to Wallper as "Henry Hui": https://www.wallper.app/wallpaper/animals/frog-relaxing-in-pond-ad249c50-39c0-48f4-b72d-02e9e4c4afe9 |
+
+`cyberpunk_desk.mp4` (Wallper "Cyber Hacker" by "biggjohnson2k", `9288727d…`) was replaced on 2026-11-15 by a Pixabay video; see "Pixabay videos" below. The original stays in `assets/backgrounds/videos/original/` and is no longer served.
 
 **Status (2026-11-11).** On 2026-11-12 the owner had `desktop_windows.mp4` ("Blue,Lofi boy"), `cherry_blossom_cottage.mp4` ("Spring lofi"), `twilight_skyline.mp4` (owner-made) and `rainy_cottage.mp4` ("Lofi") removed from the app, and later the same day `flower_hill_girl.mp4` ("Field of cherry blossom"). The remaining two are wired into the desktop `ScenePicker`'s "Videos" group (`components/wickglow/features/background/video-art.ts`), each with a thumbnail in `assets/backgrounds/thumbnails/`. Both came from Wallper; the owner is shipping them on Wallper's permission (below), not on a licence from each artist. An earlier note here said three carried a moewalls.com watermark; the originals were later traced to Wallper.
 
@@ -27,9 +30,8 @@ Added 2026-11-12 from raw exports in `assets/backgrounds/videos/original/` (most
 
 | File (was) | Length | License | Source / artist |
 | :--- | :----- | :------ | :--------------- |
-| `snowy_sled.mp4` (`2d0d311f-1486-414b-aa40-fc098ed96745.mp4`) | 11s | From Wallper (owner, 2026-11-12). Wallper permission not yet confirmed for this video | Wallper; page and uploader not recorded. Hand-painted snowy slope, a small frog on a sled |
-| `mossy_branch.mp4` (`5037c286-9372-4693-8679-dcf3d73134db.mp4`) | 35s | From Wallper (owner, 2026-11-12). Wallper permission not yet confirmed for this video | Wallper; page and uploader not recorded. Close-up of a moss-covered branch |
-| `night_hills.mp4` (`8a926e43-a5a1-4e27-82a8-d49f2548470a.mp4`) | 15s | From Wallper (owner, 2026-11-12). Wallper permission not yet confirmed for this video | Wallper; page and uploader not recorded. Rolling green hills at night. The original has a small watermark in the bottom-right corner; identify it |
+| `snowy_sled.mp4` (`2d0d311f-1486-414b-aa40-fc098ed96745.mp4`) | 11s | **Cleared: permission from the artist.** The owner confirmed on 2026-11-15 that it is Abi Toads' work and covered by her "Go for it! I would be absolutely honored~" | Artist: Abi Toads (Instagram `abi.toads`). Hand-painted snowy slope, a small frog on a sled |
+| `mossy_branch.mp4` (`5037c286-9372-4693-8679-dcf3d73134db.mp4`) | 35s | **Cleared: permission from the artist.** The owner confirmed on 2026-11-15 that it is Abi Toads' work and covered by the same reply | Artist: Abi Toads (Instagram `abi.toads`). Close-up of a moss-covered branch |
 
 **Status (2026-11-12).** All three are in the desktop `ScenePicker`'s "Videos" group. All three came from Wallper. The Wallper permission above was about the six 2026-11-11 videos; confirm with Wallper that it covers these three too, and add each Wallper page link, before a release build.
 
@@ -48,10 +50,11 @@ That licence (checked 2026-11-11), for free assets: use in any number of persona
 
 Who made the animated versions is not recorded. If someone other than the owner animated them, the CraftPix licence still covers the art; note the source of the animation here if known.
 
-## Classic video
+## Pixabay videos
+
+Pixabay Content License (https://pixabay.com/service/license-summary/): free for commercial and non-commercial use, no attribution required, may be modified. Not allowed: selling or distributing the video on its own unaltered, or implying endorsement. Shown as a background inside the app, which is allowed. Credit is given anyway, as Pixabay asks.
 
 | File | Length | License | Source / artist |
 | :--- | :----- | :------ | :--------------- |
-| `270983_medium.mp4` (the "Classic" scene) | Not recorded | Pixabay Content License, no attribution needed (as supplied by the owner, 2026-11-09). Pixabay page URL not on file yet; add it | "Video by MrBones03 from Pixabay". Pixabay video id 270983, inferred from the filename and not checked against the page |
-
-**Status.** Recorded from the owner's note when the file was added (see `docs/agent/completed.md`, 2026-11-09). Not yet checked against the Pixabay page: add the page URL and confirm the artist before release.
+| `270983_medium.mp4` (the "Classic" scene, bundled) | Not recorded | **Cleared:** Pixabay Content License | "Live Wallpaper Cozy Cabin Rainy Day" by MrBones03: https://pixabay.com/videos/live-wallpaper-cozy-cabin-rainy-day-270983/ (page and artist confirmed by the owner, 2026-11-15) |
+| `cyberpunk_desk_rain.mp4` (the "Cyberpunk Desk" scene, served from `public/scenes/v1/videos/`) | 21s | **Cleared:** Pixabay Content License | Pixabay video 150883 by `u_gm5v89x1on`: https://pixabay.com/videos/computers-office-desk-windows-rain-150883/ (from the owner, 2026-11-15). Source download: `assets/backgrounds/videos/original/cyberpunkreplacement.mp4` (3840x2160, 30fps). Encoded 2026-11-15 to 1080p H.264 High, CRF 20, preset slow, 30fps, no audio, faststart (5.4MB); thumbnail is the frame at 1s, 480x270. Replaces the Wallper "Cyber Hacker" video under the same scene id, at a new path so phones that downloaded the old file fetch this one |

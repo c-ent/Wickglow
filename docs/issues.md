@@ -10,8 +10,9 @@ Order set by the owner on 2026-11-11: High first (H1 to H6), then Medium (M1 to 
 
 ### C1. Uncleared videos are selectable in the shipping picker
 
-- Status: Open
-- Where: `components/wickglow/features/background/video-art.ts` lines 8 to 15, `BACKGROUND_LICENSES.md`
+- Status: Fixed 2026-11-15. Cleared: Classic and Cyberpunk Desk (Pixabay; Cyberpunk Desk replaced by a Pixabay video), Frog Pond, Snowy Sled and Mossy Branch (Abi Toads: "Go for it!"). Night Hills removed (owner, 2026-11-15). Every video left in the app is cleared. See the summary at the top of `BACKGROUND_LICENSES.md`.
+- Note: only Classic is bundled in the app. The others are served from `public/scenes/v1/videos/` on the website and downloaded on demand, so the website build is what ships them.
+- Where: `components/wickglow/features/background/video-art.ts`, `BACKGROUND_LICENSES.md`
 - Cause (updated 2026-11-12): five Wallper videos are wired into `VIDEOS`, and any build or web export made now ships them. The earlier moewalls.com attribution was wrong; the originals were traced to Wallper. Wallper's terms license uploads to Wallper only, so each rests on Wallper's permission:
   - `cyberpunk_desk`: the owner reports Wallper said it may be used (2026-11-11). Wallper's reply is not on file yet.
   - `frog_lily_pond`: the same Wallper permission; the artist (Abi Toads) has no written permission on file.
@@ -52,15 +53,15 @@ Order set by the owner on 2026-11-11: High first (H1 to H6), then Medium (M1 to 
 
 ### H5. Eleven audio players are created at launch
 
-- Status: Fixed 2026-11-11, not yet checked on a device
+- Status: Fixed 2026-11-11; checked by the owner on a device 2026-11-15
 - Where: `components/wickglow/hooks/use-ambient.ts`, `components/wickglow/hooks/use-background-audio.ts`
 - Cause: nine ambient players were built and given a source at launch even with every slider at zero.
 - Fix made: an ambient player is created the first time its slider goes above zero. Once created it is kept and paused at zero, and all of them are released when the provider unmounts.
-- Still to check on a device: each loop starts when its slider is raised, keeps playing with the screen off, and the lock-screen card still shows "Ambient" when only ambient is playing.
+- Checked 2026-11-15 (owner): each loop starts when its slider is raised, keeps playing with the screen off, and the lock-screen card still shows "Ambient" when only ambient is playing.
 
 ### H6. One test fails in the working tree
 
-- Status: Fixed 2026-11-11, owner to confirm the value
+- Status: Fixed 2026-11-11; owner confirmed 20% on 2026-11-15
 - Where: `src/theme/tokens.test.ts`, `docs/agent/ui.md`
 - Cause: the test and `ui.md` said `bgControl` is white at 11%, while `tokens.ts` has 20% with a comment saying it was made more solid for video backgrounds.
 - Fix made: the test and `ui.md` now say 20%, so the app looks the same as before. If 11% was the intended value, change `tokens.ts`, the test and `ui.md` back together.
@@ -90,7 +91,7 @@ Order set by the owner on 2026-11-11: High first (H1 to H6), then Medium (M1 to 
 
 ### M4. Picked music files are stored twice
 
-- Status: Fixed 2026-11-11, not yet checked on a device
+- Status: Fixed 2026-11-11; checked by the owner on a device 2026-11-15
 - Where: `components/wickglow/domain/own-music.ts`
 - Cause: the picker copies to cache, then the file is copied to documents and the cache copy is never deleted.
 - Fix made: the picker's cache copy is deleted after a successful copy. Only a file inside the app's cache folder is ever deleted, so the user's original cannot be touched.
@@ -113,7 +114,7 @@ Order set by the owner on 2026-11-11: High first (H1 to H6), then Medium (M1 to 
 
 ### M7. A failed embed opens another app without being asked
 
-- Status: Fixed 2026-11-11, owner to confirm the behaviour
+- Status: Fixed 2026-11-11; owner confirmed the "Open link" button on 2026-11-15
 - Where: `components/wickglow/features/audio/stream-player.tsx`
 - Cause: any load error, including being offline, sets `failed`, and on Android that calls `Linking.openURL` automatically with a "may be private" message.
 - Fix made: a failed embed no longer opens another app on its own. Every platform shows "This link could not be played here. It may be private, or you may be offline." with an "Open link" button. To get the automatic Android handoff back, restore the effect in `stream-player.tsx`.
@@ -134,7 +135,7 @@ From the architecture review of 2026-11-11 (the `improve-codebase-architecture` 
 
 ### A1. The session transitions are wired by hand in the provider
 
-- Status: Fixed 2026-11-11, not yet checked on a device or in a browser
+- Status: Fixed 2026-11-11; checked by the owner on a device 2026-11-15
 - Where: `components/wickglow/logic.tsx` (`begin`, `pause`, `reset`, `skip`, `setMode`, `finish`, `updateCfg`, the launch effect)
 - Cause: each transition saves the clock, moves or cancels the session-end alarm, clears or shows the end card, and starts or lowers the music, all in its own closure inside a React component. The "exactly one notification at `endAt`" rule lives in how those closures are written, and no test can reach them. H1 and H2 were bugs in this code.
 - Fix: one plain module owns every transition. The alarm, the music and the time are handed in, so tests can run it with stand-ins.
@@ -142,7 +143,7 @@ From the architecture review of 2026-11-11 (the `improve-codebase-architecture` 
 
 ### A2. Which player owns the sound is tracked by four refs
 
-- Status: Fixed 2026-11-11, not yet checked on a device or in a browser
+- Status: Fixed 2026-11-11; checked by the owner on a device 2026-11-15
 - Where: `components/wickglow/logic.tsx` (`activeStreamIdRef`, `heldForEmbed`, `resumeWhenActive`, `leftForStream`, set by `openStream`, `closeStream`, `releaseStreamForLocal`, `startSessionMusic` and an `AppState` listener)
 - Cause: the hand-off between the local player, an embed and another app is a state machine spread over four booleans and six writers, with no tests.
 - Fix: one pure module in `src/core` with named states. It takes an event and returns the next state and whether to pause or play the local player.
@@ -150,7 +151,7 @@ From the architecture review of 2026-11-11 (the `improve-codebase-architecture` 
 
 ### A3. Saving is spread over the provider
 
-- Status: Fixed 2026-11-11, not yet checked on a device or in a browser
+- Status: Fixed 2026-11-11; checked by the owner on a device 2026-11-15
 - Where: `components/wickglow/logic.tsx` (`savedRef`, `commit`, `update`, the persist effect, the flush effect, the day roll), `components/wickglow/domain/save-queue.ts`
 - Cause: three writers each have to set the ref and the React state together, and the timing between them, the save queue and the effects has no test.
 - Fix: one store module outside React holds the newest state, takes every change and decides when to write. The provider subscribes to it.
@@ -158,7 +159,7 @@ From the architecture review of 2026-11-11 (the `improve-codebase-architecture` 
 
 ### A4. The three screen shells repeat the same session rules
 
-- Status: Fixed 2026-11-11, not yet checked on a device or in a browser
+- Status: Fixed 2026-11-11; checked by the owner on a device 2026-11-15
 - Where: `components/wickglow/screens/mobile.tsx`, `tablet.tsx`, `desktop.tsx`
 - Cause: the zen timer, the start label, the "n of 4" line, the lit pips and the end card are written out in each shell. `cycle % 4` is a phase rule in layout files, against invariant 2 in `architecture.md`.
 - Fix: derive what the timer shows in one pure module, plus one zen hook. Each shell only arranges it.
@@ -167,7 +168,7 @@ From the architecture review of 2026-11-11 (the `improve-codebase-architecture` 
 
 ### A5. The ambient sounds have no single list
 
-- Status: Fixed 2026-11-11, not yet checked on a device or in a browser
+- Status: Fixed 2026-11-11; checked by the owner on a device 2026-11-15
 - Where: `components/ambient-tracks.ts`, `components/wickglow/theme.ts`, `hooks/use-ambient.ts`, `hooks/use-background-audio.ts`, `logic.tsx`, `domain/saved-state.ts`, `features/audio/mixer-block.tsx`
 - Cause: the nine sound names are spelled out in seven files, some of them in effect dependency lists the compiler does not check. There are two level types, one 0..100 and one 0..1.
 - Fix: one list of sounds that the types, the players, the saved defaults and the mixer rows read.
@@ -189,7 +190,7 @@ From a check against the `vercel-react-native-skills` rules in `.agents/skills`,
 
 ### B1. Components dot into one context object that is rebuilt every render
 
-- Status: Fixed 2026-11-11, not yet checked on a device or in a browser
+- Status: Fixed 2026-11-11; checked by the owner on a device 2026-11-15
 - Rule: `react-compiler-destructure-functions` (the skill rates it High), `react-state-minimize`
 - Where: `const lamp = useWickglow()` then `lamp.x` in the three screen shells, `timer-settings.tsx`, `task-list.tsx` and four places in `music-block.tsx`. The root cause is in `logic.tsx`.
 - Cause: the provider builds a new context value and new action functions on every render, and it renders once a second for the clock and about twice a second while music plays. The React Compiler keys its cache on `lamp`, so those components get little memoisation.
@@ -202,7 +203,7 @@ From a check against the `vercel-react-native-skills` rules in `.agents/skills`,
 
 ### B2. Lists are not virtualised
 
-- Status: Fixed 2026-11-11 for the track list, not yet checked on a device or in a browser; the task list is left as it is
+- Status: Fixed 2026-11-11 for the track list, checked by the owner 2026-11-15; the task list is left as it is
 - Rule: `list-performance-virtualize`
 - Where: the task list (`task-list.tsx`) and the track list (`music-block.tsx`, `TrackRows`) map every row inside a `ScrollView`.
 - Cause: fine for 14 bundled tracks, but own files can reach 500 and each row draws an SVG tile.
@@ -231,7 +232,7 @@ From a check against the `vercel-react-native-skills` rules in `.agents/skills`,
 
 ### B5. `react-native` `Image` instead of `expo-image`
 
-- Status: Fixed 2026-11-11, needs a new development build
+- Status: Fixed 2026-11-11; Scenes panel checked by the owner on a device 2026-11-15
 - Rule: `ui-expo-image`
 - Where: the 12 thumbnails in `scene-picker.tsx`.
 - Decision: the owner approved the new dependency on 2026-11-11. `expo-image` was added with `npx expo install`, which also added its config plugin to `app.json`.
@@ -240,7 +241,7 @@ From a check against the `vercel-react-native-skills` rules in `.agents/skills`,
 
 ### B6. The stream embed slot is measured a frame late
 
-- Status: Fixed 2026-11-11, not yet checked in a browser
+- Status: Fixed 2026-11-11; checked by the owner in a browser 2026-11-15
 - Rule: `ui-measure-views`
 - Where: `desktop.tsx`, `placeEmbed`
 - Cause: the slot is measured with `measureInWindow` inside a `requestAnimationFrame`, so the embed is hidden for a frame when the Music card opens.

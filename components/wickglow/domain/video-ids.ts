@@ -9,7 +9,6 @@ export const VIDEO_IDS = [
   'frog_lily_pond',
   'snowy_sled',
   'mossy_branch',
-  'night_hills',
 ] as const;
 
 export type VideoId = (typeof VIDEO_IDS)[number];
