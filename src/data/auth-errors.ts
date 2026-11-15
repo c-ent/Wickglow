@@ -3,7 +3,7 @@
 
 export type AuthResult = { ok: true } | { ok: false; message: string; cancelled?: boolean };
 
-/** At least 8 characters, checked before anything is sent (owner, 2026-11-13). */
+/** At least 8 characters, checked before anything is sent. */
 export const MIN_PASSWORD_LENGTH = 8;
 
 export function codeOf(error: unknown): string {

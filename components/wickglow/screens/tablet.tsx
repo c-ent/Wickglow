@@ -34,7 +34,6 @@ import { ClockIcon, FlameIcon, ResetIcon, SkipIcon } from '@/components/wickglow
  */
 export function TabletWickglow() {
   const lamp = useWickglow();
-  // Actions never change identity, so they are pulled out once (see logic.tsx).
   const { setMode, toggle, startNext, dismissEnding, reset, skip } = lamp;
   // Streaming is desktop-only; end one left playing from a wider window.
   useEndStream();

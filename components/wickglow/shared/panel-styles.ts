@@ -23,10 +23,7 @@ export const darkGlass: ViewStyle = {
 };
 
 // Screens and feature files share these keys, so the sheet stays in one place.
-// This is the app's "shared CSS file": buttons, inputs, rows, bars, the
-// calendar cells and so on. React Native has no stylesheet cascade or CSS
-// classes, so a style is shared by importing it (usually as `styles`) and
-// putting it in a component's `style` prop. Names are grouped roughly by
+// Buttons, inputs, rows, bars, the calendar cells and so on, grouped roughly by
 // feature (task*, mix*, month*, stream*).
 export const panelStyles = StyleSheet.create({
   addRow: {
@@ -309,7 +306,7 @@ export const panelStyles = StyleSheet.create({
   },
   // 3 per row. Each row spreads its tiles edge to edge; MoodPicker pads a
   // short last row with invisible `moodSpacer`s so its tiles start at the left
-  // under the first column (owner, 2026-11-14) instead of being centered or
+  // under the first column instead of being centered or
   // pushed to the edges. `moodBtn` has a fixed width so nothing stretches.
   moodRow: {
     flexDirection: 'row',

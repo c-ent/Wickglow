@@ -4,14 +4,13 @@ import Svg, { Path } from 'react-native-svg';
 import { useReducedMotion } from '@/components/wickglow/hooks/use-reduced-motion';
 import { colors } from '@/src/theme/tokens';
 
-// `createAnimatedComponent` wraps an SVG Path so `animatedProps` can drive its `d`.
 const AnimatedPath = Reanimated.createAnimatedComponent(Path);
 
 // The mixer icon's three columns, in its 24-unit grid: x position, where the
 // knob rests (as on the still MixerIcon), where it drifts to, and how long one
-// drift there and back takes (halved 2026-11-14, owner asked for faster). Out
-// of step, so it reads as "on" rather than "playing".
-// Columns and knobs match Lucide's sliders-vertical (MixerIcon, 2026-11-14).
+// drift there and back takes. Out of step, so it reads as "on" rather than
+// "playing".
+// Columns and knobs match Lucide's sliders-vertical (MixerIcon).
 const COLUMNS = [
   { x: 5, rest: 14, to: 9, ms: 1700 },
   { x: 12, rest: 8, to: 13, ms: 2050 },

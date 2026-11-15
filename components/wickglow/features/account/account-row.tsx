@@ -33,7 +33,7 @@ export function statusColor(sync: SyncStatus): string {
 }
 
 /**
- * The Account row in Stats (owner, 2026-11-13), on phone, tablet and desktop.
+ * The Account row in Stats, on phone, tablet and desktop.
  * One compact card: a round initial, the email with a status dot under it,
  * and the main action on the right. A footer line holds the sign-out note and
  * the "Delete account" request. Signed out, the same shape offers Sign in,

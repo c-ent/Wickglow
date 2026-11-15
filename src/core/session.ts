@@ -83,7 +83,7 @@ function applyTaskCount<T extends ProgressState>(
   let day: DayStats = state.day;
   let days: DayHistory = state.days;
   let xp = state.xp;
-  // Reopening takes the credit back (owner, 2026-11-14): a quest the day no
+  // Reopening takes the credit back: a quest the day no
   // longer reaches is unclaimed with its XP, as a sync rebuild does.
   if (targetKey === dayKey) {
     const nextTotal = done ? state.day.tasks + 1 : Math.max(0, state.day.tasks - 1);

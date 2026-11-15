@@ -3,7 +3,7 @@ import { createInitialState, parseSavedState } from './saved-state';
 
 // The parse boundary under test: whatever is stored, `parseSavedState` must
 // return a usable state and never throw. The cases cover a clean start, a save
-// from an older version, and a hand-edited one, plus the rules that survive a
+// with missing fields, and a hand-edited one, plus the rules that survive a
 // round trip: a subtask whose parent is gone, a task's due date, a running
 // session with a missing deadline.
 
@@ -51,7 +51,7 @@ describe('saved day history', () => {
     expect(parseSavedState(JSON.stringify({ musicLoop: 'yes' }), now).musicLoop).toBe(false);
   });
 
-  it('falls back to the configured length for a save made before totalMs existed', () => {
+  it('falls back to the configured length when the session has no totalMs', () => {
     const state = parseSavedState(JSON.stringify({
       session: { mode: 'focus', status: 'running', endAt: now + 5_000, remainingMs: 5_000 },
     }), now);
@@ -297,19 +297,6 @@ describe('saved day history', () => {
 
 describe('session log and sync record', () => {
   const now = new Date(2026, 10, 13, 18).getTime();
-
-  it('turns an old save\'s daily totals into day records once', () => {
-    const raw = JSON.stringify({
-      xp: 100,
-      days: {
-        '2026-11-12': { d: '2026-11-12', sessions: 2, minutes: 50, tasks: 1, claimed: ['q3'] },
-        '2026-11-11': { d: '2026-11-11', sessions: 0, minutes: 0, tasks: 0, claimed: [] },
-      },
-    });
-    const state = parseSavedState(raw, now);
-    expect(state.log).toEqual({ sessions: [], legacy: [{ d: '2026-11-12', minutes: 50, sessions: 2, tasks: 1 }] });
-    expect(state.sync).toBeNull();
-  });
 
   it('keeps a saved log and drops bad records', () => {
     const end = now - 3600000;

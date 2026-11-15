@@ -11,7 +11,7 @@ import { countsAsRewardSession, focusSessionXp } from './xp';
 // Progress from before records existed is one `DayRecord` per day (the daily
 // totals the device already had). XP, streak and the per-day history are
 // worked out from these by `rebuildProgress`, never stored as editable totals
-// in the account. This is the sync model the owner chose on 2026-11-13.
+// in the account.
 
 /** The longest focus a record may hold, matching the Firestore rules. */
 export const MAX_RECORD_MINUTES = 180;
@@ -31,7 +31,7 @@ export interface SessionRecord {
   /**
    * The local day the session was finished on, on the device that finished
    * it (`calendarKey` format). Every device files the session on this day, so
-   * devices in different time zones agree (owner, 2026-11-14). Missing on
+   * devices in different time zones agree. Missing on
    * records from before it existed: those are filed by the reader's clock.
    */
   d?: string;
@@ -57,7 +57,7 @@ export interface DayRecord {
 
 /**
  * A finished top-level task that was then deleted. Deleting a finished task
- * keeps its credit (owner, 2026-11-14), so the day it was finished keeps its
+ * keeps its credit, so the day it was finished keeps its
  * count. Reopening a task still takes the credit back: it is no longer done.
  */
 export interface FinishedRecord {
@@ -143,34 +143,6 @@ export function appendSession(log: ProgressLog, record: SessionRecord | null): P
   return { ...log, sessions: [...log.sessions, record].sort((a, b) => a.end - b.end) };
 }
 
-/**
- * The device's daily totals as day records, for a save from before records
- * existed. Minutes are capped at a whole day, as the rules cap them. A day's
- * task count leaves out the finished tasks still in `tasks`: those are counted
- * from the tasks themselves, so a day record holds only finishes no task shows
- * any more, and the rebuild adds the two (a later finish or reopen then moves
- * the total, and nothing is counted twice).
- */
-export function legacyFromHistory(days: DayHistory, tasks: Task[] = []): DayRecord[] {
-  const live: Record<string, number> = {};
-  for (const task of tasks) {
-    if (task.parentId != null || !task.done || !task.doneOn) continue;
-    live[task.doneOn] = (live[task.doneOn] ?? 0) + 1;
-  }
-  const records: DayRecord[] = [];
-  for (const day of Object.values(days)) {
-    const extraTasks = Math.max(0, Math.floor(day.tasks) - (live[day.d] ?? 0));
-    if (day.minutes <= 0 && day.sessions <= 0 && extraTasks <= 0) continue;
-    records.push({
-      d: day.d,
-      minutes: Math.min(MAX_DAY_MINUTES, Math.max(0, Math.floor(day.minutes))),
-      sessions: Math.min(MAX_DAY_MINUTES / 10, Math.max(0, Math.floor(day.sessions))),
-      tasks: Math.min(MAX_DAY_TASKS, extraTasks),
-    });
-  }
-  return records.sort((a, b) => dayOrder(a.d) - dayOrder(b.d));
-}
-
 /** True when the log or the task list holds anything worth keeping. */
 export function hasProgress(log: ProgressLog, tasks: Task[]): boolean {
   return log.sessions.length > 0 || log.legacy.length > 0 || (log.finished?.length ?? 0) > 0 || tasks.length > 0;
@@ -185,9 +157,9 @@ export interface RebuiltProgress {
 
 /**
  * XP, streak and the day history, worked out from the log and the tasks.
- * A day's task count is its day record (finishes from before records that no
- * task shows, see `legacyFromHistory`) plus the top-level tasks finished that
- * day (live ones, and deleted ones in `log.finished`).
+ * A day's task count is its day record (finishes no task shows any more) plus
+ * the top-level tasks finished that day (live ones, and deleted ones in
+ * `log.finished`).
  * Quests are claimed on any day that reached them. The streak walks the days
  * with at least one 10-minute session in order.
  */

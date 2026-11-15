@@ -23,7 +23,7 @@ import { withoutProgress, type SavedState } from './saved-state';
 // it with fakes. The rules for combining are in src/core/sync.ts.
 //
 // - Signing in links this device to the account. If both hold progress, the
-//   user picks which to keep (owner, 2026-11-13); the other is dropped.
+//   user picks which to keep; the other is dropped.
 // - While linked, the device listens only for records written since its last
 //   sync, and reconciles on each confirmed batch. If the account was reset
 //   from another device, or this device was away longer than deleted tasks
@@ -32,10 +32,10 @@ import { withoutProgress, type SavedState } from './saved-state';
 //   session, 10 s after the last task edit (so a burst of edits is one write
 //   per task), and at once when the app leaves the foreground (`flush`).
 // - XP, streak and history are rebuilt from the log while linked.
-// - Signing out (`forget`) clears the progress from the device (owner,
-//   2026-11-14), so the next account to sign in here cannot take it. The
-//   caller first waits for it to be saved (`whenSaved`) and warns if it is
-//   not (`unsaved`). `stop` (the session ended without a sign-out) keeps it.
+// - Signing out (`forget`) clears the progress from the device, so the next
+//   account to sign in here cannot take it. The caller first waits for it to
+//   be saved (`whenSaved`) and warns if it is not (`unsaved`). `stop` (the
+//   session ended without a sign-out) keeps it.
 
 export interface ProgressRemote {
   /** Everything the account holds. */

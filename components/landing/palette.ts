@@ -1,8 +1,8 @@
 import { colors, fade } from '@/src/theme/tokens';
 
 // Colours that only the landing page uses. The page is a darker, near-black
-// violet than the app's Amber scene, with the Amber flame as the only accent
-// (owner's design, 2026-11-15). Everything else comes from `src/theme/tokens`.
+// violet than the app's Amber scene, with the Amber flame as the only accent.
+// Everything else comes from `src/theme/tokens`.
 export const land = {
   bg: '#0B0812',
   /** The faint violet haze at the top left of the page. */

@@ -410,8 +410,8 @@ function Anchor({
 }
 
 /**
- * One Mac-style window of screenshots that loops forever. Swipe or scroll sideways,
- * press the arrows, or use the dots; past the last slide it carries on to the first,
+ * One browser-style window of screenshots that loops forever. Swipe or scroll sideways,
+ * press the arrows, or pick a scene tab; past the last slide it carries on to the first,
  * and back from the first to the last. It is a plain horizontal scroller with CSS
  * scroll snapping, so touch swiping, trackpads and keyboard scrolling all work. The
  * window takes the exact shape of the screenshots, so nothing is cropped or padded.
@@ -1097,7 +1097,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textWrap: 'balance',
   }),
-  // Gallery: a Mac-style window (bezel, title bar with three dots) around the shots.
+  // Gallery: a browser-style window (bezel, title bar with dots and an address pill) around the shots.
   mac: {
     borderRadius: 20,
     borderWidth: 1,

@@ -22,7 +22,7 @@ import { createAccountSync, SyncStatus, SyncStore } from '@/components/wickglow/
 // the account UI and nothing else. `WickglowSession` provides it with the
 // saved-state store.
 
-/** Account deletion is by email request; the owner deletes by hand after 7 days (owner, 2026-11-13). */
+/** Account deletion is by email request; the owner deletes by hand after 7 days. */
 export const DELETION_EMAIL = 'encarnacionelher@gmail.com';
 
 export interface AccountValue {
@@ -38,7 +38,7 @@ export interface AccountValue {
   resetPassword: (email: string) => Promise<AuthResult>;
   resend: () => Promise<AuthResult>;
   /**
-   * Signs out and clears the progress from this device (owner, 2026-11-14).
+   * Signs out and clears the progress from this device.
    * If some of it is not in the account yet, waits a moment for it, then asks
    * first (`leaving`).
    */

@@ -107,8 +107,7 @@ export interface MoodPalette {
  * Moonlit. This is also the single source for the desktop scenes: `SCENES` in
  * `components/wickglow/theme.ts` maps these same palettes into gradient
  * stops and drifting orbs, so a theme is the same name and the same colors on
- * every layout (owner decision, 2026-11-14; the two systems used to carry
- * separate colors under a few matching names).
+ * every layout.
  */
 export const moods: Record<MoodId, MoodPalette> = {
   amber: {

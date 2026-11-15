@@ -3,7 +3,6 @@ import {
   appendSession,
   emptyLog,
   hasProgress,
-  legacyFromHistory,
   logMinutes,
   rebuildProgress,
   sessionRecord,
@@ -48,20 +47,6 @@ describe('session records', () => {
     const once = appendSession(emptyLog(), record);
     expect(appendSession(once, record)).toBe(once);
     expect(once.sessions).toHaveLength(1);
-  });
-});
-
-describe('legacyFromHistory', () => {
-  it('turns days with progress into records and caps a day at 1440 minutes', () => {
-    const records = legacyFromHistory({
-      '2026-11-2': { d: '2026-11-2', minutes: 2000, sessions: 3, tasks: 1, claimed: ['q1'] },
-      '2026-11-3': { d: '2026-11-3', minutes: 0, sessions: 0, tasks: 0, claimed: [] },
-      '2026-11-1': { d: '2026-11-1', minutes: 30, sessions: 1, tasks: 0, claimed: [] },
-    });
-    expect(records).toEqual([
-      { d: '2026-11-1', minutes: 30, sessions: 1, tasks: 0 },
-      { d: '2026-11-2', minutes: 1440, sessions: 3, tasks: 1 },
-    ]);
   });
 });
 
@@ -130,21 +115,6 @@ describe('rebuildProgress', () => {
       sessionRecord(at(2026, 11, 1), 25),
     );
     expect(rebuildProgress(log, [], at(2026, 11, 1, 20)).streak).toEqual({ n: 2, last: '2026-11-1' });
-  });
-
-  it('counts a migrated day once, and a finish after the migration on top of it', () => {
-    // The old save counted 2 tasks that day: task 1 (still in the list) and one
-    // deleted before records existed.
-    const history = { '2026-11-3': { d: '2026-11-3', minutes: 0, sessions: 0, tasks: 2, claimed: ['q3'] } };
-    const tasks = [task(1, '2026-11-3')];
-    const legacy = legacyFromHistory(history, tasks);
-    expect(legacy).toEqual([{ d: '2026-11-3', minutes: 0, sessions: 0, tasks: 1 }]);
-    const log = { sessions: [], legacy };
-    expect(rebuildProgress(log, tasks, at(2026, 11, 3, 20)).day.tasks).toBe(2);
-    // A task finished after the migration adds to the day.
-    expect(rebuildProgress(log, [...tasks, task(2, '2026-11-3')], at(2026, 11, 3, 20)).day.tasks).toBe(3);
-    // Reopening the migrated task lowers it; the deleted one stays counted.
-    expect(rebuildProgress(log, [], at(2026, 11, 3, 20)).day.tasks).toBe(1);
   });
 
   it('counts a deleted finished task on the day it was finished, and each task once', () => {

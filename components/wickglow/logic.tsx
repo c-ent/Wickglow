@@ -51,9 +51,9 @@ import {
 } from '@/components/wickglow/theme';
 
 /**
- * logic.tsx is the app's brain. Think of it like a Next.js/React Context
- * provider that wraps the whole app: every screen calls `useWickglow()` to read
- * state (xp, tasks, timer) and call actions (toggle, skip, addTask).
+ * The app's state and actions, as a React context provider that wraps every
+ * screen: each screen calls `useWickglow()` to read state (xp, tasks, timer)
+ * and call actions (toggle, skip, addTask).
  *
  * How the pieces fit:
  * - `WickglowProvider` loads the saved state from AsyncStorage (async, so it

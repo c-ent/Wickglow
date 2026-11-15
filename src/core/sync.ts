@@ -5,8 +5,8 @@ import { Task } from './types';
 // Firestore side lives in `src/data/progress-remote.ts`, and the caller hands
 // the account's records in.
 //
-// To keep Firestore reads low (fix B, owner 2026-11-13), a device normally
-// reads only the records written since its last sync (`SyncMeta.since`), not
+// To keep Firestore reads low, a device normally reads only the records
+// written since its last sync (`SyncMeta.since`), not
 // the whole account. So a reconcile gets either:
 // - a delta: only what changed. A record missing from it is simply unchanged.
 // - a full copy: everything the account holds (first link, a new device, or
@@ -448,7 +448,7 @@ function normaliseTasks(tasks: Task[]): Task[] {
  * acknowledged. A device not linked to that account (never linked, linked to
  * another, or "Decide later") has all of its progress unsaved. Old tombstones
  * waiting to be purged are not progress. Used before a sign-out clears the
- * device (owner, 2026-11-14).
+ * device.
  */
 export function hasUnsaved(
   local: { log: ProgressLog; tasks: Task[] },

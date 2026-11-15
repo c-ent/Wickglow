@@ -14,7 +14,6 @@ import { useTone } from '@/components/wickglow/features/tone';
  */
 export function TimerSettings({ mobile = false }: { mobile?: boolean }) {
   const lamp = useWickglow();
-  // Actions never change identity, so they are pulled out once (see logic.tsx).
   const { setAuto, setZenOpt, setMusicEnd, applyPreset, setDuration } = lamp;
   const tone = useTone(mobile);
   // A preset is "selected" only when all three lengths match the current settings.

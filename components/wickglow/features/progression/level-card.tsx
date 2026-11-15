@@ -7,9 +7,8 @@ import { panelStyles as styles } from '@/components/wickglow/shared/panel-styles
 import { useTone } from '@/components/wickglow/features/tone';
 import { progressWide as wide } from '@/components/wickglow/features/progression/wide-styles';
 
-// Radius of the progress ring, and its circumference. The ring is a circle
-// whose dash pattern is as long as the circle; shifting the dash offset hides
-// part of it, which is the standard SVG trick for a circular progress bar.
+// Radius of the progress ring, and its circumference: the dash offset hides
+// part of a dash as long as the circle, which draws the progress.
 const RING = 26;
 const RING_LENGTH = 2 * Math.PI * RING;
 

@@ -24,9 +24,9 @@ import { VIDEOS } from '@/components/wickglow/features/background/video-art';
 
 /**
  * The single screen of the app (rendered by app/index.tsx on Android and iOS,
- * app/app.tsx on the web). It does only two
- * things: load fonts, and pick which of the three layouts to show for the
- * current window size. Everything else lives in the layouts under `screens/`.
+ * app/app.tsx on the web). It loads the fonts, clears out retired scene
+ * downloads, and picks which of the three layouts to show for the current
+ * window size. Everything else lives in the layouts under `screens/`.
  */
 
 // useSyncExternalStore needs a subscribe function; there is nothing to

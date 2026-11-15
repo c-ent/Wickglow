@@ -11,7 +11,7 @@ import { CalendarIcon, ChevronIcon, CloseIcon, PencilIcon, TargetIcon, TrashIcon
  * title or the target icon to focus it, edit, delete, and open its subtasks.
  *
  * This file only DISPLAYS tasks and sends actions to the context
- * (`lamp.addTask`, `lamp.toggleTask`, ...). The rules (checking the last
+ * (`addTask`, `toggleTask`, ...). The rules (checking the last
  * subtask checks the parent, only the parent counts for the daily quest, ...)
  * live in src/core/tasks.ts. Its UI-only state is: the draft text/date, which
  * row is being edited, and the subtask drafts.
@@ -24,8 +24,7 @@ const dueFormatter = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
 });
 
-// hitSlop grows the tappable area of small icon buttons past their drawn size,
-// so they're easier to hit with a thumb without changing the layout.
+// Small icon buttons get a larger tap area than they draw.
 const iconSlop = { top: 10, bottom: 10, left: 6, right: 6 };
 
 // Web only: style for the invisible <input type="date">. React Native has no
@@ -243,7 +242,6 @@ function IconButton({ label, onPress, children }: {
 
 export function TaskList({ mobile = false }: { mobile?: boolean }) {
   const lamp = useWickglow();
-  // Actions never change identity, so they are pulled out once (see logic.tsx).
   const { addTask, addSubtask, renameTask, setTaskDate, setTaskOpen, removeTask, toggleTask, focusTask } = lamp;
   const tone = useTone(mobile);
   const [text, setText] = useState(''); // new-task title being typed

@@ -19,9 +19,8 @@ describe('returning visitor script', () => {
     expect(run('/', { [APP_VISITED_KEY]: '1' })).toBe('/app');
   });
 
-  it('recognises visitors from before the mark by their saved state, old key too', () => {
+  it('recognises visitors from before the mark by their saved state', () => {
     expect(run('/', { 'wickglow:state': '{}' })).toBe('/app');
-    expect(run('/', { 'lumifi:state': '{}' })).toBe('/app');
   });
 
   it('keeps the query and hash', () => {

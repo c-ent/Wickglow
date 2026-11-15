@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Lenient reading with Zod, for data the app did not just write: the device
-// save (an older version, or hand-edited) and records read from the account.
+// save (possibly hand-edited) and records read from the account.
 // Nothing here throws. A value that does not fit falls back, and a list or map
 // keeps only the entries that fit, so one bad entry never loses the rest.
 

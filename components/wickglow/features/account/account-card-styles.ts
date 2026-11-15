@@ -4,7 +4,7 @@ import { glassPanel } from '@/components/wickglow/shared/panel-styles';
 
 // The small glass cards that float over the app for the account: sign-in and
 // the first sign-in choice. Same glass and size on phone, tablet and desktop
-// (owner, 2026-11-13), like the session-end card.
+//, like the session-end card.
 export const cardStyles = StyleSheet.create({
   scrim: {
     flex: 1,

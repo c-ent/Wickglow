@@ -14,11 +14,8 @@ import { StreamServiceMark } from '@/components/wickglow/shared/stream-marks';
  * must not stop the music). It renders nothing unless an embed is active.
  */
 
-// Vertical space the card adds around the embed (header + padding), in px.
-const CARD_CHROME = 72;
-
 /**
- * Streaming links are a web-only feature (owner choice, 2026-11-13). In the
+ * Streaming links are a web-only feature. In the
  * Android and iOS app the service embeds run in a WebView with no sign-in, so
  * Spotify and Apple Music only offered previews that often did not play. The
  * Streaming views are hidden there and no embed is shown. Saved links stay in
@@ -38,7 +35,7 @@ export function openStreamEmbed(links: StreamLink[], activeId: string | null) {
 }
 
 /**
- * Phone and tablet layouts have no streaming (owner choice, 2026-11-14). On the
+ * Phone and tablet layouts have no streaming. On the
  * web a window can narrow from desktop to phone width with an embed playing;
  * with no player on screen it would be silent but still own the sound, so the
  * phone and tablet screens call this to end it.
@@ -48,11 +45,6 @@ export function useEndStream() {
   useEffect(() => {
     if (activeStreamId != null) closeStream();
   }, [activeStreamId, closeStream]);
-}
-
-// Total card height for an embed of the given height.
-export function streamCardHeight(embedHeight: number) {
-  return embedHeight + CARD_CHROME;
 }
 
 /**

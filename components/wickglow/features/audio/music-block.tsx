@@ -119,7 +119,7 @@ export function SoundsScroller({
 }) {
   const tone = useTone(mobile);
   const [source, setSource] = useState<MusicSource>('tracks');
-  // Streaming lives only on the desktop Music card (owner choice, 2026-11-14),
+  // Streaming lives only on the desktop Music card,
   // so phone and tablet never offer it. Without Ambient (the tablet) only
   // Tracks is left, so the switch is not shown at all.
   const options: MusicSource[] = ['tracks'];
@@ -185,7 +185,7 @@ export function SoundsScroller({
   );
 }
 
-// The space between two track rows (the mapped list used `gap: 8`).
+// The space between two track rows.
 function RowGap() {
   return <View style={wideStyles.rowGap} />;
 }
@@ -245,7 +245,6 @@ function LoopButton({
 // `lamp` is just the name for the app context (the app was once called Lamp).
 function NowPlaying({ mobile = false, wide = false }: { mobile?: boolean; wide?: boolean }) {
   const lamp = useWickglow();
-  // Actions never change identity, so they are pulled out once (see logic.tsx).
   const { setMix, toggleMusic, nextTrack, prevTrack, toggleMusicLoop } = lamp;
   const tone = useTone(mobile);
   const icon = tone.ink;
@@ -402,7 +401,6 @@ function TrackProgress({ accent, wide = false }: { accent: string; wide?: boolea
 // on Android/iOS; on `wide` the button lives in FilesNote at the bottom instead.
 function PlaylistHead({ wide = false }: { wide?: boolean }) {
   const lamp = useWickglow();
-  // Actions never change identity, so they are pulled out once (see logic.tsx).
   const { addOwnFiles } = lamp;
   const canAddFiles = Platform.OS !== 'web' && !wide;
   return (
@@ -423,8 +421,8 @@ function PlaylistHead({ wide = false }: { wide?: boolean }) {
 }
 
 // The desktop card's track list: a two-column grid that scrolls inside its box.
-// FlashList lays out the columns; each cell pads itself to make the 8px gutters
-// the old hand-built grid had (a list has no `gap` between its cells).
+// FlashList lays out the columns; each cell pads itself to make the 8px gutters,
+// since a list has no `gap` between its cells.
 function WideTrackGrid() {
   const tone = useTone(false);
   const { playlist, trackIndex, musicPlaying, ownTracks, selectTrack, removeOwnTrack } = useWickglow();
@@ -465,7 +463,7 @@ function ownId(ownTracks: { id: string }[], entry: PlaylistEntry) {
 }
 
 // One playlist row: art tile, title/artist, an animated EQ mark while it plays,
-// and a remove button for own files. `fade(color, a)` = color at alpha `a`.
+// and a remove button for own files.
 function TrackRow({
   entry,
   index,
@@ -528,7 +526,6 @@ function TrackRow({
 // private app folder to copy them into), so it explains that instead.
 function FilesNote({ wide = false }: { wide?: boolean }) {
   const lamp = useWickglow();
-  // Actions never change identity, so they are pulled out once (see logic.tsx).
   const { addOwnFiles } = lamp;
   const canAddFiles = Platform.OS !== 'web';
   if (!wide) {
@@ -627,8 +624,8 @@ function EqMark({ color }: { color: string }) {
 }
 
 // Styles for the desktop (`wide`) card, and a few shared by the phone rows.
-// `minHeight: 0` / `minWidth: 0` on flex children lets them shrink and scroll
-// instead of stretching the parent (a common React Native/CSS flexbox gotcha).
+// `minHeight: 0` / `minWidth: 0` let flex children shrink and scroll instead of
+// stretching the card.
 const wideStyles = StyleSheet.create({
   row: {
     flex: 1,

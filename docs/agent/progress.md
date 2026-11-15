@@ -59,6 +59,8 @@ Everything else was checked by the owner on 2026-11-15: two-device sync, ambient
 
 ## Tooling notes
 
+- Clean-up (2026-11-15): code comments reviewed (outdated ones fixed, tutorial-style and "(owner, date)" notes removed); leftovers removed (`task-panel.tsx`, `streamCardHeight`); all backward compatibility removed (Lumifi save key and alarm id, old notification channels, the no-log and `videoBg: true` save conversions). Rules for both are in `conventions.md`. The synced Firestore format keeps its `d_` day records and optional `day`/`epoch` handling; changing that is a schema decision for the owner.
+
 - Docs (2026-11-15): added `docs/user-guide.md` (for users) and `docs/developer-guide.md` (for contributors; links to the agent docs instead of copying them), linked from `README.md`. Keep both in step when a user-visible feature or the code layout changes.
 
 - `npm audit` reports 0 vulnerabilities through the `overrides` in `package.json` (`@grpc/grpc-js`, `uuid`, `re2`, `@opentelemetry/core`, `glob`), all transitive copies in dev-only `firebase-tools`; the app bundle is unaffected. Do not run `npm audit fix --force`: it downgrades `firebase`/`firebase-tools` to older majors. Re-check the overrides when `firebase-tools` resolves them itself.

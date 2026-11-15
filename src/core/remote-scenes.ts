@@ -21,10 +21,10 @@ export const SCENE_HOST = 'https://wickglow.vercel.app/scenes';
 export const SCENE_WEB_PATH = '/scenes';
 
 /**
- * A file on the scene host. `path` is relative to the host and carries a
- * version folder (`v1/...`): a re-encoded file gets a new version, so a phone
- * that holds the old one downloads the new one instead of trusting it.
- * `bytes` is the exact file size, used to check a finished download.
+ * A file on the scene host. `path` is relative to the host (`v1/videos/...`).
+ * A replaced or re-encoded file needs a new path (a new version folder or
+ * file name), so a phone that holds the old one downloads the new one instead
+ * of trusting it. `bytes` is the exact file size, used to check a download.
  */
 export interface RemoteFile {
   path: string;

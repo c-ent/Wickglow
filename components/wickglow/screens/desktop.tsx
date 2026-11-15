@@ -93,7 +93,6 @@ const PANEL_TITLE: Record<PanelId, string> = {
 
 export function DesktopWickglow() {
   const lamp = useWickglow();
-  // Actions never change identity, so they are pulled out once (see logic.tsx).
   const { setMode, toggle, startNext, dismissEnding, reset, skip, toggleMusic } = lamp;
   const insets = useSafeAreaInsets();
   const fullscreen = useFullscreen();

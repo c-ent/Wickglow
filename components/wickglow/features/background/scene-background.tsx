@@ -46,9 +46,7 @@ export function SceneBackground() {
   // Measured pixel size, used to draw the SVG gradient (see fill-gradient.tsx).
   const { size, onLayout } = useFillSize();
 
-  // Breathing while any session runs (focus or break): the scene "pulses" with you.
   useEffect(() => {
-    // The core moves whenever `running` is true, in any mode including breaks.
     // Paused or idle: do nothing, so the previous run's cleanup leaves the core frozen
     // at its current size instead of snapping back. Resume continues from there.
     if (!running || !gradient) return undefined;

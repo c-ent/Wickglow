@@ -14,3 +14,9 @@ Read this when unsure how something is done here. Only rules that the linter, fo
 
 ## Data and storage
 - Audio and other large files go in assets or file storage, not in database rows.
+- No backward compatibility (owner, 2026-11-15): Wickglow is a new app. Do not add migrations, legacy keys or ids, or code that reads an older save or record format. Change a format in place; validation that falls back on a bad or missing field is still fine. The synced Firestore format is the exception to decide case by case, since changing it is a schema change (ask first).
+
+## Comments
+- Say why the code is the way it is, not what a standard React Native or React API does.
+- No history in code comments: no "(owner, 2026-11-14)", "used to", "was removed" or commit ids. Who decided what, and when, goes in `docs/agent/` and git history (owner, 2026-11-15).
+- Remove leftover code (unused files, exports, constants) instead of leaving a note that it is unused.
