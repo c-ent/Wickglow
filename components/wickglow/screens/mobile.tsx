@@ -113,7 +113,9 @@ export function MobileWickglow() {
   useTourRevealer(waitUntilStill);
   // Set during render when the step changes (React's "adjust state when a
   // value changes" pattern), so the sheet is already right under the new step.
-  const [tourWas, setTourWas] = useState(tour.step);
+  // Starts at null, so a step already on screen when this layout mounts (the
+  // window turned from tablet to phone mid-tour) is prepared too.
+  const [tourWas, setTourWas] = useState<typeof tour.step>(null);
   if (tourWas !== tour.step) {
     setTourWas(tour.step);
     if (tour.step === 'ambient') {

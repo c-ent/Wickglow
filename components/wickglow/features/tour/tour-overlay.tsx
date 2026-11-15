@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Reanimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fade, fonts, radius, rounded } from '@/src/theme/tokens';
@@ -46,6 +46,14 @@ const STEP_ICON: Record<TourTarget, React.ComponentType<{ size?: number; color?:
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
+const web = Platform.OS === 'web';
+// Web: what Tab can reach inside the tour (Pressable draws a div with tabindex 0).
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+const focusables = (root: HTMLElement) => Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE));
+// React Native Web hands a View's ref over as its DOM element.
+type ViewRef = React.ComponentRef<typeof View>;
+const domOf = (ref: React.RefObject<ViewRef | null>) => ref.current as unknown as HTMLElement | null;
+
 interface TourOverlayProps {
   layout: TourLayout;
   step: TourStep;
@@ -78,6 +86,37 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
   const [cardHeight, setCardHeight] = useState(180);
   const shown = measured?.index === index;
   const opacity = useSharedValue(0);
+  const rootRef = useRef<ViewRef>(null);
+  const primaryRef = useRef<ViewRef>(null);
+
+  // Web: while the tour is open, the app behind it is inert (no focus, no
+  // clicks, hidden from screen readers), so it acts as a modal dialog. When it
+  // closes, focus goes back to where it was, or to the first control left.
+  useEffect(() => {
+    if (!web || typeof document === 'undefined') return undefined;
+    const root = domOf(rootRef);
+    if (!root) return undefined;
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const made: HTMLElement[] = [];
+    for (let node: HTMLElement | null = root; node && node !== document.body; node = node.parentElement) {
+      for (const sibling of Array.from(node.parentElement?.children ?? [])) {
+        if (sibling !== node && sibling instanceof HTMLElement && !sibling.inert) {
+          sibling.inert = true;
+          made.push(sibling);
+        }
+      }
+    }
+    return () => {
+      for (const element of made) element.inert = false;
+      if (before && before.isConnected && !before.closest('[inert]')) before.focus();
+      else focusables(document.body)[0]?.focus();
+    };
+  }, []);
+
+  // Web: each step's card takes focus on its main button once it is shown.
+  useEffect(() => {
+    if (web && shown) domOf(primaryRef)?.focus({ preventScroll: true });
+  }, [index, shown]);
 
   // Find the step's target (scrolled into view first where the layout can),
   // and measure it again whenever the window changes size.
@@ -103,11 +142,29 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
     else opacity.set(reduced ? 1 : withTiming(1, { duration: 260 }));
   }, [opacity, reduced, shown]);
 
-  // Escape skips the tour on the web, as it closes other cards.
+  // Escape skips the tour on the web, as it closes other cards. Tab and
+  // Shift+Tab go round the tour's own controls and never leave it.
   useEffect(() => {
-    if (Platform.OS !== 'web' || typeof document === 'undefined') return undefined;
+    if (!web || typeof document === 'undefined') return undefined;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onSkip();
+      if (event.key === 'Escape') {
+        onSkip();
+        return;
+      }
+      const root = domOf(rootRef);
+      if (event.key !== 'Tab' || !root) return;
+      const items = focusables(root);
+      const active = document.activeElement;
+      const inside = active instanceof Node && root.contains(active);
+      if (items.length === 0) {
+        event.preventDefault();
+      } else if (event.shiftKey && (!inside || active === items[0])) {
+        event.preventDefault();
+        items[items.length - 1].focus();
+      } else if (!event.shiftKey && (!inside || active === items[items.length - 1])) {
+        event.preventDefault();
+        items[0].focus();
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -124,8 +181,11 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
   const target = shown ? measured.rect : null;
   const hole = target ? visibleRect(target, screen, RING_PAD) : null;
   const place = placeCard(hole, screen, { width: cardWidth, height: cardHeight }, layout === 'tablet' ? TABLET_SIDES : DEFAULT_SIDES);
+  // The tallest the card may be: the screen between the safe-area insets. The
+  // welcome card scrolls when its content is taller (large text, a short window).
+  const maxCardHeight = Math.max(120, height - insets.top - insets.bottom - EDGE * 2);
   // Keep the card clear of the status bar and the home indicator.
-  const top = Math.max(insets.top + EDGE, Math.min(place.top, height - insets.bottom - EDGE - cardHeight));
+  const top =Math.max(insets.top + EDGE, Math.min(place.top, height - insets.bottom - EDGE - cardHeight));
 
   const last = index === count - 1;
   const welcome = step.target === null;
@@ -135,7 +195,7 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
   const caret = hole ? caretFor(place.side, hole, { x: place.left, y: top, width: cardWidth, height: cardHeight }) : null;
 
   return (
-    <View style={styles.root} pointerEvents="auto">
+    <View ref={rootRef} style={styles.root} pointerEvents="auto">
       {/* The dim: four pieces around the cut-out, or the whole screen while a
           step is being placed and for the welcome card. */}
       {hole ? (
@@ -180,6 +240,7 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
             cardMotion,
             {
               width: cardWidth,
+              maxHeight: maxCardHeight,
               left: place.left,
               top,
               borderTopColor: fade(accent, 0.5),
@@ -189,7 +250,7 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
         >
           {caret ? <View pointerEvents="none" style={[styles.caret, caret]} /> : null}
           {welcome ? (
-            <View style={styles.welcome}>
+            <ScrollView style={styles.welcomeScroll} contentContainerStyle={styles.welcome}>
               <View style={[styles.logoHalo, { backgroundColor: fade(accent, 0.12), borderColor: fade(accent, 0.32), boxShadow: `0 0 32px ${fade(accent, 0.35)}` }]}>
                 <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                   <LogoMark size={34} />
@@ -197,14 +258,14 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
               </View>
               <Text style={styles.welcomeTitle}>{step.title}</Text>
               <Text style={[styles.body, styles.centered]}>{step.body}</Text>
-              <Pressable accessibilityRole="button" onPress={onNext} style={[styles.primary, styles.primaryWide, { backgroundColor: accent }]}>
+              <Pressable ref={primaryRef} accessibilityRole="button" onPress={onNext} style={[styles.primary, styles.primaryWide, { backgroundColor: accent }]}>
                 <Text style={styles.primaryText}>Show me around</Text>
                 <ChevronIcon size={14} color={colors.textInverse} />
               </Pressable>
               <Pressable accessibilityRole="button" accessibilityLabel="Skip the tour" onPress={onSkip} hitSlop={6} style={styles.skipWide}>
                 <Text style={styles.skipText}>Skip the tour</Text>
               </Pressable>
-            </View>
+            </ScrollView>
           ) : (
             <>
               <View style={styles.head}>
@@ -246,7 +307,7 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
                   <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onBack} style={styles.back}>
                     <ChevronLeftIcon size={18} color={colors.textPrimary} />
                   </Pressable>
-                  <Pressable accessibilityRole="button" onPress={onNext} style={[styles.primary, { backgroundColor: accent }]}>
+                  <Pressable ref={primaryRef} accessibilityRole="button" onPress={onNext} style={[styles.primary, { backgroundColor: accent }]}>
                     <Text style={styles.primaryText}>{last ? 'Done' : 'Next'}</Text>
                     {last ? <CheckIcon size={14} color={colors.textInverse} /> : <ChevronIcon size={14} color={colors.textInverse} />}
                   </Pressable>
@@ -313,6 +374,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgSurface,
     borderColor: colors.border,
     transform: [{ rotate: '45deg' }],
+  },
+  // Shrinks to the card's maxHeight and scrolls past it, so both buttons stay reachable.
+  welcomeScroll: {
+    flexGrow: 0,
+    flexShrink: 1,
   },
   welcome: {
     alignItems: 'center',

@@ -43,11 +43,14 @@ export function TourProvider({ layout, children }: { layout: TourLayout; childre
   const [index, setIndex] = useState<number | null>(null);
   const nodes = useRef(new Map<TourTarget, TourNode>());
   const revealer = useRef<Revealer | null>(null);
+  // Set by any start, step or skip, so the launch check (still reading storage)
+  // can no longer start the tour over what the user already did.
+  const acted = useRef(false);
 
   useEffect(() => {
     let live = true;
     void readTourSeen().then((stored) => {
-      if (live && shouldStartTour(stored)) setIndex(0);
+      if (live && !acted.current && shouldStartTour(stored)) setIndex(0);
     });
     return () => {
       live = false;
@@ -55,12 +58,14 @@ export function TourProvider({ layout, children }: { layout: TourLayout; childre
   }, []);
 
   const finish = useCallback(() => {
+    acted.current = true;
     setIndex(null);
     // Best effort: if it cannot be written, the tour shows again next launch.
     AsyncStorage.setItem(TOUR_KEY, TOUR_SEEN).catch(() => undefined);
   }, []);
 
   const next = useCallback(() => {
+    acted.current = true;
     setIndex((current) => (current === null || current + 1 >= steps.length ? null : current + 1));
   }, [steps.length]);
 
@@ -71,10 +76,14 @@ export function TourProvider({ layout, children }: { layout: TourLayout; childre
   }, [finish, index, next, steps.length]);
 
   const back = useCallback(() => {
+    acted.current = true;
     setIndex((current) => (current === null ? null : Math.max(0, current - 1)));
   }, []);
 
-  const start = useCallback(() => setIndex(0), []);
+  const start = useCallback(() => {
+    acted.current = true;
+    setIndex(0);
+  }, []);
   const register = useCallback((target: TourTarget, node: TourNode | null) => {
     if (node) nodes.current.set(target, node);
     else nodes.current.delete(target);

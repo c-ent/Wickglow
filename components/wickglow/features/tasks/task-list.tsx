@@ -3,7 +3,7 @@ import type { Task } from '@/src/core/types';
 import { colors, fade, fonts, rounded } from '@/src/theme/tokens';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, useRecyclingState } from '@shopify/flash-list';
 import { useWickglow } from '@/components/wickglow/logic';
 import { useTone } from '@/components/wickglow/features/tone';
 import { openDuePicker } from '@/components/wickglow/features/tasks/due-picker';
@@ -495,8 +495,12 @@ function sameRow(prev: TaskItemProps, next: TaskItemProps): boolean {
 
 /** One task row with its subtasks and their add field. */
 export const TaskItem = React.memo(function TaskItem({ task, subs, overdue, active, editingId, autoFocusSub, accent, mobile, actions }: TaskItemProps) {
-  // The draft of a new subtask. Kept in the row, so typing it redraws only this row.
-  const [subDraft, setSubDraft] = useState('');
+  // The draft of a new subtask. Kept in the row, so typing it redraws only this
+  // row. A list reuses a row's view for another task as it scrolls, so the
+  // draft starts empty again whenever the row shows a different task. Typing
+  // never changes the row's size, so it skips the list's re-layout.
+  const [subDraft, setSubDraftState] = useRecyclingState('', [task.id]);
+  const setSubDraft = (value: string) => setSubDraftState(value, true);
   const doneCount = subs.filter((item) => item.done).length;
 
   function addSub() {
