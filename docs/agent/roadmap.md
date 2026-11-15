@@ -30,7 +30,7 @@ The order was updated on 2026-11-03 and is recorded in `progress.md`. #1, #4 and
 | 5   | Accounts and sync                       | v2      | Shipped 2026-11-15 (owner checked two devices) | —                                                         |
 | 10  | Private circles (friends' candles)      | —       | Out (owner, 2026-11-10)     | —                                                         |
 | 11  | Focus rooms                             | —       | Out (owner, 2026-11-10)     | —                                                         |
-| 12  | Landing page                            | v2      | Done (owner, 2026-11-15), APK link pending | Web build, APK on Google Drive, C1 cleared                |
+| 12  | Landing page                            | v2      | Done (owner, 2026-11-15) | Web build, APK on Google Drive, C1 cleared                |
 | 13  | First-run tour                          | v2      | Current (owner, 2026-11-15) | —                                                         |
 
 #1, #4 and #8 have shipped. #2 and #3 were removed. #6 and #7 are out. #9, #10 and #11 were dropped by the owner on 2026-11-10; their sections below are history only. #5 was dropped on 2026-11-10 and brought back on 2026-11-13 as the current feature.
@@ -109,7 +109,7 @@ Shipped: paste a public link. The save stores the link and the service name. The
 
 Open questions: whether links can be shared in rooms. The privacy-policy line Spotify's widget terms ask for, before release.
 
-### 12. Landing page — done (added and closed by the owner 2026-11-15; the APK link is still a placeholder)
+### 12. Landing page — done (added and closed by the owner 2026-11-15)
 
 Source: the owner, for the portfolio link and ahead of the Play listing.
 
@@ -117,13 +117,13 @@ Decided 2026-11-15:
 
 - On the web, `/` is the landing page (`app/index.web.tsx`, UI in `components/landing/`) and the web app is at `/app` (`app/app.tsx`). On Android and iOS, `/` stays the app (`app/index.tsx`). A visitor who has used the web app before is sent from `/` to `/app` by a script in the page head (`components/landing/returning-visitor.ts`); `/?home` shows the landing page anyway; the web app links there from an "About Wickglow" line at the end of Timer settings, opened in a new tab so a running session keeps going (owner, 2026-11-15). `/download`, the first address, redirects to `/` (owner, 2026-11-15). The web build uses `"output": "static"`, so each route is pre-rendered to a static HTML page and reuses the theme tokens and fonts.
 - `/` is the page to link to (portfolio, posts, the Play listing's website field). The first plan kept the app at `/` with no redirect; the owner moved the landing page to `/` the same day so search results show it.
-- The main button downloads the Android APK, hosted on the owner's Google Drive at first. Until the owner sends the link, `APK_URL` in `components/landing/content.ts` is a placeholder.
+- The main button downloads the Android APK, hosted on the owner's Google Drive at first. `APK_URL` in `components/landing/content.ts` is the owner's Drive share link (set 2026-11-15).
 - It goes live before the Google Play badge exists. When the Play listing is live, the badge is added and the APK button can be dropped or kept.
 - Screenshots: three desktop shots in one swipeable gallery ("See it in action") inside a browser-style window (three dots and an address pill showing `GALLERY_ADDRESS`, arrows, scene tabs with a one-line caption per slide, a warm glow beneath), the same 1040 column as the other sections (it was 1200 wide at first; the owner asked on 2026-11-15 for it to line up), the screen area the same shape as the screenshots, Moonlit first (`GALLERY` in `content.ts`). The phone shot sits beside the Android download in the download card (`PHONE_SHOT`). WebP files are in `assets/landing/`.
 
 Design: the owner's mockup (2026-11-15). A near-black violet page with Amber glows and the flame colour as the only accent. Nav (Features, Android, Open the app); hero "Get the work done." with four floating sample widgets (timer, level, streak, ambient mix; sample numbers, drawn only on windows 1180 wide or more); a slim promise bar (Free, no ads or tracking, no account needed, no harsh alarm); a screenshot section; a "What's inside" bento grid whose pictures are the app's own components fed sample values (`components/landing/app-pieces.tsx`: `Candle`, `LevelCardView`, the task row pieces, the mixer styles, `DayCell`; the app exports `CheckBox`, `FocusButton`, `taskListStyles`, `DayCell` and `LevelCardView` for this); a download card; footer links to `/privacy`, `/delete-account` and the GitHub repo. Page-only colours are in `components/landing/palette.ts`; the rest come from the tokens.
 
-C1 in `docs/issues.md` (the unconfirmed videos) was fixed on 2026-11-15, so it no longer blocks a public launch. What is left is the APK link.
+C1 in `docs/issues.md` (the unconfirmed videos) was fixed on 2026-11-15, so it no longer blocks a public launch. The APK link is in (2026-11-15).
 
 ### 13. First-run tour — current (owner, 2026-11-15)
 

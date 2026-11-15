@@ -8,28 +8,27 @@ v2
 
 ## Current feature
 
-First-run tour (roadmap #13), started 2026-11-15 (owner). The landing page (#12) is done (owner, 2026-11-15) apart from the APK link. The Google Play release steps are owner tasks.
+First-run tour (roadmap #13), started 2026-11-15 (owner). The landing page (#12) is done (owner, 2026-11-15), APK link included. The Google Play release steps are owner tasks.
 
 ## Current goal
 
-New users see a short tour that points at the timer, music, ambient sounds, mood or scenes, tasks and progress on phone, tablet and desktop. Ship Wickglow on Google Play after that.
+New users see a short tour that points at the timer, music, ambient sounds, mood or scenes, tasks and progress on phone, tablet and desktop.
 
 ## Not yet completed
 
 - First-run tour (current), built 2026-11-15 and checked by the owner on Android and desktop the same day. See roadmap #13.
-- Landing page APK link (roadmap #12, open question 1 below).
-- Google Play release. See Google Play deployment.
+- Google Play release: on hold (owner, 2026-11-15). The steps stay under Google Play deployment for when it resumes.
 - Review fixes 2026-11-15: no session can start while a sign-out runs, and sign-out stops when storage could not be read at launch. A state taken from another tab keeps that tab's task edit times. Gallery arrows keep counting past either end. Privacy policy: removed the wrong Android streaming sentence. Pixabay licence note now covers lightly changed copies.
 - Landing gallery 2026-11-15: the pixel-art meadow (`desktop.webp`) is now the first slide. The third slide is a new Music panel shot (`desktop-2.webp`, from the new `screenshots/desktop-2.png`) and replaces the Amber one. The phone shot beside the Android download (`mobile.webp`) is the new `screenshots/mobile.png`. The second slide is now a Tasks panel shot (`desktop-3.webp`, 1600x760, from the owner's new PNG) and replaces the Moonlit one.
 - Landing hero glow 2026-11-15: the Amber glow behind the hero heading is 900x600, from 150 below the top (owner tuned it twice the same day).
-- C1 fixed 2026-11-15: every video left is cleared, and Night Hills was removed. See `BACKGROUND_LICENSES.md`. The landing page now waits only on the APK link.
+- C1 fixed 2026-11-15: every video left is cleared, and Night Hills was removed. See `BACKGROUND_LICENSES.md`. The APK link is in too (2026-11-15).
 - App to landing page link 2026-11-15 (owner): web only, a quiet "About Wickglow" link as the last line of Timer settings (phone Timer tab, tablet side column, desktop settings card). It opens `/?home` (`LANDING_HOME_PATH`) in a new tab, so the returning-visitor script does not send it back and a running session keeps going.
 
 ## Open questions
 
 Landing page (roadmap #12). Built 2026-11-15. Moved the same day (owner): the landing page is `/` on the web and the web app is `/app`; returning visitors skip to `/app`; `/download` redirects to `/`. Android still opens the app at `/`. See roadmap #12. Waiting on the owner for item 1; item 2 is done:
 
-1. The Google Drive share link for the APK (set to "Anyone with the link"). Replace `APK_URL` in `components/landing/content.ts`; it is a placeholder (`https://drive.google.com/`) until then. Drive shows a "can't scan for viruses" page before files over about 100MB download, so the button may land there first.
+1. Done 2026-11-15: `APK_URL` in `components/landing/content.ts` is the owner's Google Drive share link for the arm64 release APK (built locally with Gradle). It opens Drive's file page with the download button.
 2. Screenshots are in (2026-11-15): WebP copies in `assets/landing/`, made from `assets/images/screenshots/` (about 80KB instead of 1.8MB), shown by `GALLERY` (three desktop shots in a Mac-style window) and `PHONE_SHOT` (beside the download) in `content.ts`. Replace a file in `assets/landing/` to change one. Gallery redesigned 2026-11-15: on the same 1040 column as the other sections (first built at 1200; narrowed the same day so its edges line up), browser title bar with an address pill (`GALLERY_ADDRESS`), warm glow under the window, scene tabs plus a per-slide `caption` instead of dots.
 
 Sign-out with a session running: decided 2026-11-15 (owner), built. Signing out resets a running or paused session to idle and cancels its alarm (the Reset button's `run.reset`) before the device is cleared, so a session begun under one account can never finish into the next account's progress.
@@ -38,7 +37,7 @@ Review fixes 2026-11-15: landing previews built from app buttons (tasks, calenda
 
 ## Google Play deployment
 
-Work for the owner, in order:
+On hold (owner, 2026-11-15): not planned for now. Work for the owner, in order, when it resumes:
 
 1. **Privacy policy URL.** Deployed at `https://wickglow.vercel.app/privacy`. Paste it into the Play Console privacy policy field.
 2. **Account deletion page.** Check that `https://wickglow.vercel.app/delete-account` loads. Play requires a web link for account deletion requests.

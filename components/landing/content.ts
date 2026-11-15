@@ -4,10 +4,10 @@ import type { ImageSourcePropType } from 'react-native';
 // so a link or a sentence changes in one place.
 
 /**
- * The Android APK download. Placeholder until the owner sends the Google Drive
- * share link (set to "Anyone with the link"). Replace this one line.
+ * The Android APK download: the owner's Google Drive share link ("Anyone with
+ * the link"). It opens Drive's file page, which has the download button.
  */
-export const APK_URL = 'https://drive.google.com/';
+export const APK_URL = 'https://drive.google.com/file/d/1oqYC0LGM1YPDbo9Nj5_umuV1FV6UoXAN/view?usp=sharing';
 
 export const APP_VERSION = '1.0.0';
 
