@@ -87,12 +87,38 @@ export function MusicBlock({
 const NO_TRACKS: PlaylistEntry[] = [];
 
 /**
+ * Rows a layout puts at the top of the Sounds list, before the music (the
+ * tablet's tasks). Each is its own list row, so only those on screen are drawn.
+ */
+export interface LeadRows<T> {
+  /** The list's header, above the first row (the Tasks heading and add field). */
+  header: React.ReactNode;
+  data: readonly T[];
+  keyOf: (item: T) => string;
+  render: (item: T) => React.ReactElement;
+  /** Under the last lead row, before `before` (the empty line or the hint). */
+  footer?: React.ReactNode;
+  /** What the lead rows' look depends on, so the rows on screen redraw when it changes. */
+  extra?: unknown;
+}
+
+/** One row of the Sounds list: a lead row, the music heading block, or a track. */
+export type SoundsRow<T> =
+  | { kind: 'lead'; item: T }
+  | { kind: 'head' }
+  | { kind: 'track'; entry: PlaylistEntry; index: number };
+
+const HEAD_ROW = { kind: 'head' } as const;
+
+/**
  * The Sounds page on phone and tablet, as one virtualised list. The track rows
  * are the list's items; everything else on the page rides along as the list's
- * header and footer: `before` (the mood picker, and on tablet the tasks), the
- * Tracks / Ambient switch, the player, and `after` (the mixer, and on tablet
- * the quests and calendar). It looks like the single scrolling page it
- * replaced, but only the rows near the screen are mounted.
+ * header and footer: `before` (the mood picker), the Tracks / Ambient switch,
+ * the player, and `after` (the mixer, and on tablet the quests and calendar).
+ * With `lead` (the tablet's tasks), those rows come first, each its own list
+ * row, and the music heading block becomes a row between them and the tracks.
+ * It looks like the single scrolling page it replaced, but only the rows near
+ * the screen are mounted.
  *
  * With `ambient` (the phone), the switch gains a third view, Ambient, that
  * shows only that content, so Tracks stays short.
@@ -101,8 +127,9 @@ const NO_TRACKS: PlaylistEntry[] = [];
  * vertical ScrollView is given unlimited height and mounts every row anyway.
  * So the screen renders this in place of its ScrollView, not inside it.
  */
-export function SoundsScroller({
+export function SoundsScroller<T = never>({
   mobile = false,
+  lead,
   before,
   after,
   ambient,
@@ -114,6 +141,8 @@ export function SoundsScroller({
   ambientTabRef,
 }: {
   mobile?: boolean;
+  /** Rows at the top of the list, before the music (the tablet's tasks). */
+  lead?: LeadRows<T>;
   /** Rendered above the Tracks / Ambient switch. */
   before?: React.ReactNode;
   /** Rendered below the track list. */
@@ -122,7 +151,7 @@ export function SoundsScroller({
   ambient?: React.ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
   /** The list itself, so a layout can scroll it (the tablet tour does). */
-  listRef?: React.Ref<FlashListRef<PlaylistEntry>>;
+  listRef?: React.Ref<FlashListRef<SoundsRow<T>>>;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   /** The view on show, when the layout controls it (the phone tour opens Ambient). */
   source?: MusicSource;
@@ -141,65 +170,84 @@ export function SoundsScroller({
   if (ambient) options.push('ambient');
   const { playlist, trackIndex, musicPlaying, ownTracks, selectTrack, removeOwnTrack } = useWickglow();
   const accent = tone.accent;
+  const leadExtra = lead?.extra;
   // The list re-renders its visible rows when this changes. Without it a row
   // would keep showing the old "selected" state after the track changes.
-  const extra = useMemo(() => ({ trackIndex, musicPlaying, ownTracks, accent }), [accent, musicPlaying, ownTracks, trackIndex]);
+  const extra = useMemo(() => ({ trackIndex, musicPlaying, ownTracks, accent, leadExtra }), [accent, leadExtra, musicPlaying, ownTracks, trackIndex]);
+
+  const tracks = source === 'tracks' ? playlist : NO_TRACKS;
+  const leadData = lead?.data;
+  const rows = useMemo<SoundsRow<T>[]>(() => {
+    const trackRows = tracks.map((entry, index) => ({ kind: 'track' as const, entry, index }));
+    if (!leadData) return trackRows;
+    return [...leadData.map((item) => ({ kind: 'lead' as const, item })), HEAD_ROW, ...trackRows];
+  }, [leadData, tracks]);
+
+  // `before`, the switch and the player (or the Ambient view): the list's
+  // header, or with `lead` the row between the lead rows and the tracks.
+  const musicHead = (
+    <View>
+      {lead?.footer}
+      {source === 'ambient' ? null : before}
+      {options.length > 1 ? (
+        <SegmentTabs
+          value={source}
+          options={options}
+          labels={SOURCE_LABEL}
+          refs={{ ambient: ambientTabRef }}
+          onChange={setSource}
+          mobile={mobile}
+          first={!before || source === 'ambient'}
+        />
+      ) : null}
+      {source === 'tracks' ? (
+        <>
+          <NowPlaying mobile={mobile} />
+          <PlaylistHead />
+        </>
+      ) : (
+        ambient
+      )}
+    </View>
+  );
 
   return (
     <FlashList
       ref={listRef}
       onScroll={onScroll}
       scrollEventThrottle={onScroll ? 32 : undefined}
-      data={source === 'tracks' ? playlist : NO_TRACKS}
+      data={rows}
       extraData={extra}
-      keyExtractor={(entry) => entry.key}
+      keyExtractor={(row) => (row.kind === 'lead' && lead ? `lead-${lead.keyOf(row.item)}` : row.kind === 'track' ? row.entry.key : 'head')}
+      getItemType={(row) => row.kind}
       contentContainerStyle={contentContainerStyle}
       // "handled": a tap on a button while the keyboard is open works on the
       // first tap, instead of only dismissing the keyboard.
       keyboardShouldPersistTaps="handled"
       ItemSeparatorComponent={RowGap}
-      ListHeaderComponent={(
-        <View>
-          {source === 'ambient' ? null : before}
-          {options.length > 1 ? (
-            <SegmentTabs
-              value={source}
-              options={options}
-              labels={SOURCE_LABEL}
-              refs={{ ambient: ambientTabRef }}
-              onChange={setSource}
-              mobile={mobile}
-              first={!before || source === 'ambient'}
-            />
-          ) : null}
-          {source === 'tracks' ? (
-            <>
-              <NowPlaying mobile={mobile} />
-              <PlaylistHead />
-            </>
-          ) : (
-            ambient
-          )}
-        </View>
-      )}
+      ListHeaderComponent={lead ? <View>{lead.header}</View> : musicHead}
       ListFooterComponent={(
         <View>
           {source === 'tracks' ? <FilesNote /> : null}
           {source === 'ambient' ? null : after}
         </View>
       )}
-      renderItem={({ item, index }) => (
-        <TrackRow
-          entry={item}
-          index={index}
-          selected={index === trackIndex}
-          playing={musicPlaying}
-          accent={accent}
-          onSelect={selectTrack}
-          onRemove={removeOwnTrack}
-          ownId={ownId(ownTracks, item)}
-        />
-      )}
+      renderItem={({ item: row }) => {
+        if (row.kind === 'lead') return lead ? lead.render(row.item) : null;
+        if (row.kind === 'head') return musicHead;
+        return (
+          <TrackRow
+            entry={row.entry}
+            index={row.index}
+            selected={row.index === trackIndex}
+            playing={musicPlaying}
+            accent={accent}
+            onSelect={selectTrack}
+            onRemove={removeOwnTrack}
+            ownId={ownId(ownTracks, row.entry)}
+          />
+        );
+      }}
     />
   );
 }

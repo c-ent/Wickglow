@@ -2,7 +2,8 @@ import { isOverdue, parseDueDate } from '@/src/core/tasks';
 import type { Task } from '@/src/core/types';
 import { colors, fade, fonts, rounded } from '@/src/theme/tokens';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type TextStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useWickglow } from '@/components/wickglow/logic';
 import { useTone } from '@/components/wickglow/features/tone';
 import { openDuePicker } from '@/components/wickglow/features/tasks/due-picker';
@@ -251,7 +252,12 @@ function IconButton({ label, onPress, children }: {
   );
 }
 
-export function TaskList({ mobile = false }: { mobile?: boolean }) {
+/**
+ * Everything both task lists share: the tasks grouped into rows, the edit and
+ * autofocus state, and one stable set of row actions. `rowProps` gives the
+ * props for one task's row.
+ */
+export function useTaskList(mobile: boolean) {
   const { tasks, now, activeTask, addTask, addSubtask, renameTask, setTaskDate, setTaskOpen, removeTask, toggleTask, focusTask } = useWickglow();
   const tone = useTone(mobile);
   const [editingId, setEditingId] = useState<number | null>(null); // row in edit mode
@@ -322,44 +328,76 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
     readEditValue,
   }), [addSubtask, beginEdit, commitEdit, focusTask, readEditValue, removeTask, setEditValue, setTaskDate, toggleOpen, toggleTask]);
 
-  return (
-    <View>
-      <AddTaskRow accent={accent} ink={tone.ink} onAdd={addTask} />
+  const rowProps = (task: Task): TaskItemProps => {
+    const subs = subsOf.get(task.id) ?? NO_SUBS;
+    return {
+      task,
+      subs,
+      // Overdue only changes the date's color. It never affects rewards.
+      overdue: isOverdue(task.date, now),
+      // "Active" = the task the timer's sessions count toward.
+      active: activeTask?.id === task.id && !task.done,
+      // Only the row being edited (or whose subtask is) learns the id,
+      // so starting an edit does not redraw every other row.
+      editingId: editingId != null && (editingId === task.id || subs.some((sub) => sub.id === editingId)) ? editingId : null,
+      autoFocusSub: focusSub === task.id,
+      accent,
+      mobile,
+      actions,
+    };
+  };
 
-      {ordered.length === 0 ? (
-        <Text style={styles.empty}>No tasks yet. Add your first one above.</Text>
-      ) : (
-        <View style={styles.list}>
-          {ordered.map((task) => {
-            const subs = subsOf.get(task.id) ?? NO_SUBS;
-            // Only the row being edited (or whose subtask is) learns the id,
-            // so starting an edit does not redraw every other row.
-            const editing = editingId != null && (editingId === task.id || subs.some((sub) => sub.id === editingId)) ? editingId : null;
-            return (
-              <TaskItem
-                key={task.id}
-                task={task}
-                subs={subs}
-                // Overdue only changes the date's color. It never affects rewards.
-                overdue={isOverdue(task.date, now)}
-                // "Active" = the task the timer's sessions count toward.
-                active={activeTask?.id === task.id && !task.done}
-                editingId={editing}
-                autoFocusSub={focusSub === task.id}
-                accent={accent}
-                mobile={mobile}
-                actions={actions}
-              />
-            );
-          })}
+  // What a row's look depends on beyond its task, so a virtualized list knows
+  // to redraw the rows on screen when one of them changes.
+  const extra = useMemo(() => ({ editingId, focusSub, activeId: activeTask?.id ?? null, now, accent }), [accent, activeTask?.id, editingId, focusSub, now]);
+
+  return { ordered, hasOpen, rowProps, extra, accent, ink: tone.ink, addTask };
+}
+
+/**
+ * The same list as its own scroller, drawing only the rows on screen (the
+ * phone Tasks tab and the desktop Tasks card). Opening a long list then costs
+ * a screenful of rows instead of every task, subtask and icon at once. Render
+ * it in place of a ScrollView, not inside one, as with `SoundsScroller`, in a
+ * box with a set height (a list sized by its content would draw every row).
+ * The tablet column has its tasks as leading rows of `SoundsScroller`
+ * instead, so every layout draws only the task rows on screen.
+ */
+export function TaskScroller({ mobile = true, contentContainerStyle }: { mobile?: boolean; contentContainerStyle?: StyleProp<ViewStyle> }) {
+  const { ordered, hasOpen, rowProps, extra, accent, ink, addTask } = useTaskList(mobile);
+  return (
+    <FlashList
+      data={ordered}
+      extraData={extra}
+      keyExtractor={(task) => String(task.id)}
+      contentContainerStyle={contentContainerStyle}
+      // "handled": a tap on a button while the keyboard is open works on the
+      // first tap, instead of only dismissing the keyboard.
+      keyboardShouldPersistTaps="handled"
+      ItemSeparatorComponent={RowGap}
+      ListHeaderComponent={(
+        <View style={styles.scrollerHead}>
+          <AddTaskRow accent={accent} ink={ink} onAdd={addTask} />
         </View>
       )}
-      {hasOpen ? (
-        <View style={styles.hintRow}>
-          <TargetIcon size={14} color={fade(colors.textPrimary, 0.4)} />
-          <Text style={styles.hint}>Click a task to focus on it. It shows under the timer.</Text>
-        </View>
-      ) : null}
+      ListEmptyComponent={<Text style={styles.empty}>No tasks yet. Add your first one above.</Text>}
+      ListFooterComponent={hasOpen ? <TaskHint /> : null}
+      getItemType={() => 'task'}
+      renderItem={({ item }) => <TaskItem {...rowProps(item)} />}
+    />
+  );
+}
+
+// The space between two task rows.
+function RowGap() {
+  return <View style={styles.rowGap} />;
+}
+
+export function TaskHint() {
+  return (
+    <View style={styles.hintRow}>
+      <TargetIcon size={14} color={fade(colors.textPrimary, 0.4)} />
+      <Text style={styles.hint}>Click a task to focus on it. It shows under the timer.</Text>
     </View>
   );
 }
@@ -385,7 +423,7 @@ interface RowActions {
  * The new-task field, due date and Add button. Its own component, so typing a
  * title redraws only this row, not every task in the list.
  */
-function AddTaskRow({ accent, ink, onAdd }: { accent: string; ink: string; onAdd: (text: string, date: string | null) => void }) {
+export function AddTaskRow({ accent, ink, onAdd }: { accent: string; ink: string; onAdd: (text: string, date: string | null) => void }) {
   const [text, setText] = useState(''); // new-task title being typed
   const [date, setDate] = useState(''); // new-task due date being chosen
 
@@ -456,7 +494,7 @@ function sameRow(prev: TaskItemProps, next: TaskItemProps): boolean {
 }
 
 /** One task row with its subtasks and their add field. */
-const TaskItem = React.memo(function TaskItem({ task, subs, overdue, active, editingId, autoFocusSub, accent, mobile, actions }: TaskItemProps) {
+export const TaskItem = React.memo(function TaskItem({ task, subs, overdue, active, editingId, autoFocusSub, accent, mobile, actions }: TaskItemProps) {
   // The draft of a new subtask. Kept in the row, so typing it redraws only this row.
   const [subDraft, setSubDraft] = useState('');
   const doneCount = subs.filter((item) => item.done).length;
@@ -696,9 +734,17 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodySemibold,
     fontSize: 15,
   },
+  // A plain column of task rows. Only the landing page's sample rows use it now.
   list: {
     marginTop: 16,
     gap: 6,
+  },
+  // TaskScroller: the add row's space above the first task, and the gap between rows.
+  scrollerHead: {
+    marginBottom: 16,
+  },
+  rowGap: {
+    height: 6,
   },
   item: {
     borderWidth: 1,

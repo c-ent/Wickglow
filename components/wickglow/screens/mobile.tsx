@@ -28,7 +28,7 @@ import { MonthCalendar } from '@/components/wickglow/features/progression/month-
 import { WeekChart } from '@/components/wickglow/features/progression/week-chart';
 import { MoodPicker } from '@/components/wickglow/features/settings/mood-picker';
 import { TimerSettings } from '@/components/wickglow/features/settings/timer-settings';
-import { TaskList } from '@/components/wickglow/features/tasks/task-list';
+import { TaskScroller } from '@/components/wickglow/features/tasks/task-list';
 import { FocusLine } from '@/components/wickglow/features/tasks/focus-line';
 import { MixerBlock } from '@/components/wickglow/features/audio/mixer-block';
 import { SoundsScroller, type MusicSource } from '@/components/wickglow/features/audio/music-block';
@@ -301,9 +301,14 @@ export function MobileWickglow() {
         </View>
         </>
         ) : null}
-        {/* The Sounds tab is a virtualised list (the track rows), so it is the
-            scroller itself rather than a block inside the ScrollView below. */}
-        {shown && tab === 'sounds' ? (
+        {/* The Sounds and Tasks tabs are virtualised lists (only the rows on
+            screen are drawn), so each is the scroller itself rather than a
+            block inside the ScrollView below. */}
+        {shown && tab === 'tasks' ? (
+          <View style={styles.body}>
+            <TaskScroller contentContainerStyle={bodyContent} />
+          </View>
+        ) : shown && tab === 'sounds' ? (
           <View style={styles.body}>
             {/* Tracks, Streaming and Ambient each show alone. Ambient holds the
                 mood (the look) and the ambient loops, the two that set the room. */}
@@ -324,7 +329,6 @@ export function MobileWickglow() {
             // first tap, instead of only dismissing the keyboard.
             keyboardShouldPersistTaps="handled"
           >
-            {tab === 'tasks' ? <TaskList mobile /> : null}
             {tab === 'stats' ? <StatsTab /> : null}
             {tab === 'mood' ? <MoodPicker /> : null}
             {tab === 'timer' ? <TimerSettings mobile /> : null}

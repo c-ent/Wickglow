@@ -33,7 +33,7 @@ import { MarqueeText } from '@/components/wickglow/shared/marquee-text';
 import { AmbientIcon } from '@/components/wickglow/shared/ambient-icon';
 import { ambientOn } from '@/src/core/ambient';
 import { TimerSettings } from '@/components/wickglow/features/settings/timer-settings';
-import { TaskList } from '@/components/wickglow/features/tasks/task-list';
+import { TaskScroller } from '@/components/wickglow/features/tasks/task-list';
 import { FocusLine } from '@/components/wickglow/features/tasks/focus-line';
 import { MixerBlock } from '@/components/wickglow/features/audio/mixer-block';
 import { MusicBlock } from '@/components/wickglow/features/audio/music-block';
@@ -189,6 +189,10 @@ export function DesktopWickglow() {
   // just above the keyboard while it is open.
   const wideBottom = keyboard > 0 ? keyboard + 12 : insets.bottom + 84;
   const sideBottom = keyboard > 0 ? keyboard + 12 : insets.bottom + 72;
+  // Tasks card height: a set height, up to 720 or the room above the dock (or
+  // the keyboard), so its list draws only the rows on screen. A card sized by
+  // its content would draw every task and subtask when it opens.
+  const tasksHeight = Math.min(720, Math.max(0, height - insets.top - 20 - wideBottom));
   // With the keyboard up, a side card must also not run off the top.
   const sideMaxHeight = keyboard > 0 ? Math.max(0, height - sideBottom - insets.top - 20) : undefined;
 
@@ -332,13 +336,20 @@ export function DesktopWickglow() {
           {/* The card keeps its heading and rounded corners in place; only the
               content scrolls, in a box inset from the card's edges, so the
               scrollbar sits inside the card like the Music card's track list. */}
-          <View style={[styles.progressScroll, styles.cardShell, panel === 'quests' && styles.questsScroll, panel === 'tasks' && styles.tasksScroll]}>
+          <View style={[styles.progressScroll, styles.cardShell, panel === 'quests' && styles.questsScroll, panel === 'tasks' && [styles.tasksScroll, { height: tasksHeight }]]}>
             <View style={styles.cardHead}>
               <PanelHeading title={PANEL_TITLE[panel]} onClose={() => setPanel(null)} actions={panel === 'progress' ? <AccountChip /> : undefined} />
             </View>
-            <ScrollView keyboardShouldPersistTaps="handled" style={styles.cardBody} contentContainerStyle={styles.cardBodyContent}>
-              {panel === 'progress' ? <ProgressBoard /> : panel === 'quests' ? <QuestsBoard /> : <TaskList />}
-            </ScrollView>
+            {panel === 'tasks' ? (
+              // Its own virtualised scroller, filling the card under the heading.
+              <View style={styles.tasksBody}>
+                <TaskScroller mobile={false} contentContainerStyle={styles.cardBodyContent} />
+              </View>
+            ) : (
+              <ScrollView keyboardShouldPersistTaps="handled" style={styles.cardBody} contentContainerStyle={styles.cardBodyContent}>
+                {panel === 'progress' ? <ProgressBoard /> : <QuestsBoard />}
+              </ScrollView>
+            )}
           </View>
         </View>
       ) : null}
@@ -801,6 +812,17 @@ const styles = StyleSheet.create({
   cardBody: {
     flexGrow: 0,
     flexShrink: 1,
+    minHeight: 0,
+    marginHorizontal: 8,
+  },
+  // The Tasks card's body takes all the room under the heading, with the same
+  // 8 side inset as `cardBody`. Its own style, not `cardBody` plus `flex: 1`:
+  // an explicit `flexGrow: 0` there would win over the shorthand and leave the
+  // list 0 tall, so it would draw nothing.
+  tasksBody: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
     minHeight: 0,
     marginHorizontal: 8,
   },

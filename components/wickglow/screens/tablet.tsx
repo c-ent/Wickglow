@@ -17,10 +17,10 @@ import { StatGrid } from '@/components/wickglow/features/progression/stat-grid';
 import { WeekChart } from '@/components/wickglow/features/progression/week-chart';
 import { TimerSettings } from '@/components/wickglow/features/settings/timer-settings';
 import { MoodPicker } from '@/components/wickglow/features/settings/mood-picker';
-import { TaskList } from '@/components/wickglow/features/tasks/task-list';
+import { AddTaskRow, TaskHint, TaskItem, taskListStyles, useTaskList } from '@/components/wickglow/features/tasks/task-list';
 import { FocusLine } from '@/components/wickglow/features/tasks/focus-line';
 import { MixerBlock } from '@/components/wickglow/features/audio/mixer-block';
-import { SoundsScroller } from '@/components/wickglow/features/audio/music-block';
+import { SoundsScroller, type LeadRows, type SoundsRow } from '@/components/wickglow/features/audio/music-block';
 import { useEndStream } from '@/components/wickglow/features/audio/stream-stage';
 import { SessionEndCard } from '@/components/wickglow/features/timer/session-end-card';
 import { TimeText } from '@/components/wickglow/features/timer/time-text';
@@ -28,7 +28,7 @@ import { ClockIcon, FlameIcon, ResetIcon, SkipIcon } from '@/components/wickglow
 import { useTour, useTourRevealer, useTourTarget } from '@/components/wickglow/features/tour/tour';
 import { measureInWindow, waitUntilStill, type TourNode } from '@/components/wickglow/features/tour/measure';
 import type { FlashListRef } from '@shopify/flash-list';
-import type { PlaylistEntry } from '@/src/core/own-tracks';
+import type { Task } from '@/src/core/types';
 
 // How far below the side column's top edge the tour scrolls a part to.
 const REVEAL_MARGIN = 24;
@@ -63,7 +63,7 @@ export function TabletWickglow() {
   const stageBoxRef = useRef<React.ComponentRef<typeof View>>(null);
   const stageY = useRef(0);
   const sideRef = useRef<React.ComponentRef<typeof View>>(null);
-  const listRef = useRef<FlashListRef<PlaylistEntry>>(null);
+  const listRef = useRef<FlashListRef<SoundsRow<Task>>>(null);
   const sideY = useRef(0);
   const reveal = useCallback(async (node: TourNode) => {
     const columns = [
@@ -86,6 +86,24 @@ export function TabletWickglow() {
     }
   }, []);
   useTourRevealer(reveal);
+  // The side column's tasks: the heading and add field as the list's header,
+  // then one list row per task, then the empty line or the hint.
+  const taskRows = useTaskList(true);
+  const taskLead: LeadRows<Task> = {
+    header: (
+      <View ref={tasksTarget} collapsable={false} style={taskRows.ordered.length > 0 ? styles.tasksHead : null}>
+        <Text style={[styles.kicker, styles.kickerFirst]}>Tasks</Text>
+        <AddTaskRow accent={taskRows.accent} ink={taskRows.ink} onAdd={taskRows.addTask} />
+      </View>
+    ),
+    data: taskRows.ordered,
+    keyOf: (task) => String(task.id),
+    render: (task) => <TaskItem {...taskRows.rowProps(task)} />,
+    footer: taskRows.ordered.length === 0
+      ? <Text style={taskListStyles.empty}>No tasks yet. Add your first one above.</Text>
+      : taskRows.hasOpen ? <TaskHint /> : null,
+    extra: taskRows.extra,
+  };
   // Zen mode, as on the phone: hide the UI after 4s without a touch during focus.
   // Not while the keyboard is up: typing a task or a link is activity, and the
   // side column holding the field must not fade out under it.
@@ -198,12 +216,10 @@ export function TabletWickglow() {
             // The blocks' own titles carry a 16px top margin, which sits under
             // the divider's padding. The Sounds section cannot wrap the track
             // rows (they are the list's items), so its divider tops the title.
+            // The tasks are the list's first rows, so only those on screen are drawn.
+            lead={taskLead}
             before={(
               <>
-                <View ref={tasksTarget} collapsable={false}>
-                  <Text style={[styles.kicker, styles.kickerFirst]}>Tasks</Text>
-                  <TaskList mobile />
-                </View>
                 <View ref={moodTarget} collapsable={false} style={styles.section}><MoodPicker video /></View>
                 <View ref={soundsTarget} collapsable={false} style={styles.section}><Text style={styles.kicker}>Sounds</Text></View>
               </>
@@ -437,6 +453,10 @@ const styles = StyleSheet.create({  root: {
   },
   kickerFirst: {
     marginTop: 0,
+  },
+  // Room between the add field and the first task, as the plain list has.
+  tasksHead: {
+    marginBottom: 16,
   },
   toast: {
     position: 'absolute',
