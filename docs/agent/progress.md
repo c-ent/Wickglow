@@ -28,7 +28,7 @@ None set. Pick the next roadmap item with the owner.
 
 Landing page (roadmap #12). Built 2026-11-15. Moved the same day (owner): the landing page is `/` on the web and the web app is `/app`; returning visitors skip to `/app`; `/download` redirects to `/`. Android still opens the app at `/`. See roadmap #12. Waiting on the owner for item 1; item 2 is done:
 
-1. Done 2026-11-15: `APK_URL` in `components/landing/content.ts` is the owner's Google Drive share link for the arm64 release APK (built locally with Gradle). It opens Drive's file page with the download button.
+1. Done 2026-11-15: `APK_URL` in `components/landing/content.ts` is the owner's Google Drive share link for the arm64 release APK (built locally with Gradle). Since 2026-11-15 (owner) it is a Drive folder link, so the APK inside can be replaced without changing the link.
 2. Screenshots are in (2026-11-15): WebP copies in `assets/landing/`, made from `assets/images/screenshots/` (about 80KB instead of 1.8MB), shown by `GALLERY` (three desktop shots in a Mac-style window) and `PHONE_SHOT` (beside the download) in `content.ts`. Replace a file in `assets/landing/` to change one. Gallery redesigned 2026-11-15: on the same 1040 column as the other sections (first built at 1200; narrowed the same day so its edges line up), browser title bar with an address pill (`GALLERY_ADDRESS`), warm glow under the window, scene tabs plus a per-slide `caption` instead of dots.
 
 Sign-out with a session running: decided 2026-11-15 (owner), built. Signing out resets a running or paused session to idle and cancels its alarm (the Reset button's `run.reset`) before the device is cleared, so a session begun under one account can never finish into the next account's progress.
