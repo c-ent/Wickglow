@@ -20,7 +20,7 @@ A web landing page that explains Wickglow and offers the Android APK for downloa
 - Google Play release. See Google Play deployment.
 - EAS preview and production environments have no Firebase vars yet (only development does), so a `preview` APK build cannot reach Firebase until the seven vars are ticked for both on expo.dev. See `docs/feature/firebase.md`, Owner tasks.
 - Review fixes 2026-11-15: no session can start while a sign-out runs, and sign-out stops when storage could not be read at launch. A state taken from another tab keeps that tab's task edit times. Gallery arrows keep counting past either end. Privacy policy: removed the wrong Android streaming sentence. Pixabay licence note now covers lightly changed copies.
-- Landing gallery 2026-11-15: the pixel-art meadow (`desktop.webp`) is now the first slide. The third slide is a new Music panel shot (`desktop-2.webp`, from the new `screenshots/desktop-2.png`) and replaces the Amber one.
+- Landing gallery 2026-11-15: the pixel-art meadow (`desktop.webp`) is now the first slide. The third slide is a new Music panel shot (`desktop-2.webp`, from the new `screenshots/desktop-2.png`) and replaces the Amber one. The phone shot beside the Android download (`mobile.webp`) is the new `screenshots/mobile.png`.
 - C1 fixed 2026-11-15: every video left is cleared, and Night Hills was removed. See `BACKGROUND_LICENSES.md`. The landing page now waits only on the APK link.
 - App to landing page link 2026-11-15 (owner): web only, a quiet "About Wickglow" link as the last line of Timer settings (phone Timer tab, tablet side column, desktop settings card). It opens `/?home` (`LANDING_HOME_PATH`) in a new tab, so the returning-visitor script does not send it back and a running session keeps going.
 

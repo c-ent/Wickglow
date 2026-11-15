@@ -65,8 +65,8 @@ export const GALLERY: readonly GallerySlide[] = [
 /** The phone screenshot, shown beside the Android download. */
 export const PHONE_SHOT = {
   source: require('@/assets/landing/mobile.webp') as ImageSourcePropType,
-  alt: 'Wickglow on a phone: a candle, the 25:00 timer, and the Light the candle button',
-  ratio: 378 / 821,
+  alt: 'Wickglow on a phone: a lit candle above a 24:59 focus timer, with the Pause button',
+  ratio: 374 / 816,
 };
 
 /** The slim bar under the hero: four short promises, each with a small icon. */
