@@ -67,8 +67,14 @@ export type SyncStatus =
 
 export interface SyncStore {
   get: () => SavedState;
-  commit: (next: SavedState) => void;
+  /** May resolve with whether the write was saved; no promise counts as saved. */
+  commit: (next: SavedState) => void | Promise<boolean>;
   subscribe: (listener: () => void) => () => void;
+  /**
+   * True while listeners hear about a state taken from another browser tab.
+   * That tab already noted its own edits, so they are not noted again here.
+   */
+  adopting?: () => boolean;
 }
 
 export interface AccountSync {
@@ -80,8 +86,11 @@ export interface AccountSync {
   unsaved: () => boolean;
   /** Resolves true once nothing is unsaved, or false after `ms` if something still is. */
   whenSaved: (ms: number) => Promise<boolean>;
-  /** Signing out: stops syncing and clears the progress from the device. */
-  forget: () => void;
+  /**
+   * Signing out: stops syncing and clears the progress from the device.
+   * Resolves false if the cleared state could not be written to storage.
+   */
+  forget: () => Promise<boolean>;
   /** Answers the first sign-in question. */
   choose: (keep: 'device' | 'account') => void;
   /** Tries again after the account could not be reached. */
@@ -158,12 +167,12 @@ export function createAccountSync(options: {
 
   const commit = (next: SavedState) => {
     seen = { log: next.log, tasks: next.tasks };
-    store.commit(next);
+    return store.commit(next);
   };
 
   const send = (account: string, push: SyncPush, epoch: number, run: number) => {
     const keys: string[] = [];
-    const fresh: SyncPush = { sessions: [], days: [], tasks: [], purge: [] };
+    const fresh: SyncPush = { sessions: [], tasks: [], purge: [] };
     const take = <T>(name: string, item: T, list: T[]) => {
       const key = `${account}|${name}`;
       if (inFlight.has(key)) {
@@ -174,7 +183,6 @@ export function createAccountSync(options: {
       list.push(item);
     };
     for (const record of push.sessions) take(`s:${record.id}`, record, fresh.sessions);
-    for (const record of push.days) take(`d:${record.d}`, record, fresh.days);
     // A task and its tombstone are one document: one write at a time.
     for (const task of push.tasks) take(`t:${task.id}`, task, fresh.tasks);
     for (const id of push.purge) take(`t:${id}`, id, fresh.purge);
@@ -320,7 +328,8 @@ export function createAccountSync(options: {
     if (!sessionChanged && state.tasks === seen.tasks) return;
     const before = seen.tasks;
     seen = { log: state.log, tasks: state.tasks };
-    if (state.tasks !== before) noteEdits(before, state);
+    // Another tab's save keeps the edit times that tab gave it.
+    if (state.tasks !== before && !store.adopting?.()) noteEdits(before, state);
     if (!uid || state.sync?.uid !== uid) return;
     const delay = sessionChanged ? SESSION_DELAY_MS : TASK_DELAY_MS;
     const due = now() + delay;
@@ -429,7 +438,8 @@ export function createAccountSync(options: {
       stop();
       heldBack = false;
       // Through `commit`, so the cleared tasks are not noted as local edits.
-      commit(withoutProgress(store.get(), now()));
+      const saved = commit(withoutProgress(store.get(), now()));
+      return Promise.resolve(saved).then((ok) => ok !== false, () => false);
     },
     choose: (keep) => {
       const account = uid;

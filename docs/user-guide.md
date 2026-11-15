@@ -200,9 +200,9 @@ The Account row shows where your progress stands:
 | Syncs | Stays on each device |
 | --- | --- |
 | XP, level, streak | Settings and timer lengths |
-| Tasks and their done state | Sound levels and moods |
+| Tasks, subtasks and their done state | Sound levels and moods |
 | Focus history and daily totals | Scenes, streaming links |
-| | Subtasks, your own music files |
+| | Whether a task's subtasks are shown, your own music files |
 
 ### Signing out
 
@@ -224,7 +224,7 @@ Wickglow changes its layout to fit the screen:
 
 - No ads, analytics or tracking.
 - Wickglow never records audio and doesn't ask for microphone access.
-- Without an account, nothing leaves your device.
+- Without an account, your progress, tasks and settings stay on your device. Two things contact other servers: a streaming link loads that service's player, and a scene you pick is downloaded from the Wickglow website.
 - With an account, your email (and your name, if you signed in with Google), focus sessions and tasks are stored with Firebase to sync your progress.
 
 The full policy is at <https://wickglow.vercel.app/privacy>.

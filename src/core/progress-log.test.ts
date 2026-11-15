@@ -21,7 +21,7 @@ describe('session records', () => {
     expect(sessionRecord(at(2026, 11, 3), 0)).toBeNull();
     expect(sessionRecord(at(2026, 11, 3), 181)).toBeNull();
     expect(sessionRecord(at(2026, 11, 3), 2.5)).toBeNull();
-    expect(sessionRecord(at(2026, 11, 3), 25)).toEqual({ id: `${at(2026, 11, 3)}-25`, end: at(2026, 11, 3), minutes: 25, task: null });
+    expect(sessionRecord(at(2026, 11, 3), 25)).toEqual({ id: `${at(2026, 11, 3)}-25`, end: at(2026, 11, 3), minutes: 25, task: null, d: '2026-11-3' });
     expect(sessionRecord(at(2026, 11, 3), 25, 7)?.task).toBe(7);
   });
 
@@ -30,16 +30,17 @@ describe('session records', () => {
     expect(sessionRecord(at(2026, 11, 3), 180)?.minutes).toBe(180);
   });
 
-  it('keeps the writer\'s day only when it is a calendar key within 3 days of the end', () => {
+  it('keeps the writer\'s day, and rejects a record whose day is missing or more than 3 days off', () => {
     const end = at(2026, 11, 3);
     expect(sessionRecord(end, 25, null, '2026-11-3')?.d).toBe('2026-11-3');
     expect(sessionRecord(end, 25, null, '2026-11-2')?.d).toBe('2026-11-2');
     expect(sessionRecord(end, 25, null, '2026-11-4')?.d).toBe('2026-11-4');
-    for (const bad of ['2026-11-9', '2026-10-28', 'today', 20261103, null, undefined]) {
-      const record = sessionRecord(end, 25, null, bad);
-      expect(record).not.toBeNull();
-      expect(record).not.toHaveProperty('d');
+    // Not real days, or not written the way `calendarKey` writes them.
+    for (const bad of ['2026-11-9', '2026-10-28', 'today', 20261103, null, '2026-11-03', '2026-10-32', '2026-11-0']) {
+      expect(sessionRecord(end, 25, null, bad)).toBeNull();
     }
+    // Creating a record without a day gives it this device's day of its end.
+    expect(sessionRecord(end, 25)?.d).toBe(calendarKey(end));
   });
 
   it('keeps a session once by id', () => {
@@ -109,11 +110,8 @@ describe('rebuildProgress', () => {
     expect(rebuildProgress(log, [], at(2026, 11, 4, 20)).streak).toEqual({ n: 2, last: '2026-11-4' });
   });
 
-  it('carries a streak across a month end and from day records into sessions', () => {
-    const log = appendSession(
-      { sessions: [], legacy: [{ d: '2026-10-31', minutes: 25, sessions: 1, tasks: 0 }] },
-      sessionRecord(at(2026, 11, 1), 25),
-    );
+  it('carries a streak across a month end', () => {
+    const log = appendSession(appendSession(emptyLog(), sessionRecord(at(2026, 10, 31), 25)), sessionRecord(at(2026, 11, 1), 25));
     expect(rebuildProgress(log, [], at(2026, 11, 1, 20)).streak).toEqual({ n: 2, last: '2026-11-1' });
   });
 
@@ -139,7 +137,7 @@ describe('rebuildProgress', () => {
 
 describe('summaries', () => {
   it('counts minutes and tells empty from not', () => {
-    const log = appendSession({ sessions: [], legacy: [{ d: '2026-11-1', minutes: 30, sessions: 1, tasks: 0 }] }, sessionRecord(at(2026, 11, 3), 25));
+    const log = appendSession(appendSession(emptyLog(), sessionRecord(at(2026, 11, 1), 30)), sessionRecord(at(2026, 11, 3), 25));
     expect(logMinutes(log)).toBe(55);
     expect(hasProgress(emptyLog(), [])).toBe(false);
     expect(hasProgress(emptyLog(), [task(1, null)])).toBe(true);

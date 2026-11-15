@@ -12,7 +12,8 @@ import { addNotificationReceivedListener } from 'expo-notifications';
 import { AppState, Linking, Platform, View } from 'react-native';
 import type { PixelArtId } from '@/components/wickglow/domain/pixel-art-ids';
 import type { VideoId } from '@/components/wickglow/domain/video-ids';
-import { parseSavedState, SavedState, STORAGE_KEY } from '@/components/wickglow/domain/saved-state';
+import { SavedState, STORAGE_KEY } from '@/components/wickglow/domain/saved-state';
+import { takeOtherTabSave } from '@/components/wickglow/domain/other-tab';
 import { createSavedStore, SavedStore } from '@/components/wickglow/domain/saved-store';
 import { createSessionRun, SessionEnding, SessionRun, StageChange } from '@/components/wickglow/domain/session-run';
 import { deleteOwnTrackFile, pickOwnTracks } from '@/components/wickglow/domain/own-music';
@@ -295,7 +296,7 @@ interface SessionRunHooks {
  * hooks are rebuilt every render, so the run calls the newest ones through a
  * ref, the same way `useStableActions` does.
  */
-function useSessionRun(store: SavedStore<SavedState>, hooks: SessionRunHooks): SessionRun {
+function useSessionRun(store: SavedStore<SavedState>, hooks: SessionRunHooks, canStart: () => boolean): SessionRun {
   const latest = useRef(hooks);
   useLayoutEffect(() => {
     latest.current = hooks;
@@ -314,7 +315,8 @@ function useSessionRun(store: SavedStore<SavedState>, hooks: SessionRunHooks): S
     show: (change) => latest.current.show(change),
     now: Date.now,
     random: Math.random,
-  }), [store]);
+    canStart,
+  }), [store, canStart]);
 }
 
 // Outer shell: just loads the save file. Splitting it from WickglowSession means
@@ -354,20 +356,12 @@ function WickglowSession({ loaded, children }: { loaded: SavedState; children: R
     SAVE_DELAY_MS,
   ));
   const saved = useSyncExternalStore(store.subscribe, store.get, store.get);
-  // Web: browser tabs share one saved copy. When another tab saves, take its
-  // state, so a pause or change made there is not undone by this tab's next
-  // save. Taken without a write, so the two tabs do not pass a save back and
-  // forth. Invalid JSON is ignored rather than read as a fresh state.
+  // Web: take another tab's save, unless this tab has written over it since
+  // (domain/other-tab.ts).
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const onStorage = (event: StorageEvent) => {
-      if (event.key !== STORAGE_KEY || event.newValue == null) return;
-      try {
-        JSON.parse(event.newValue);
-      } catch {
-        return;
-      }
-      store.adopt(parseSavedState(event.newValue));
+      takeOtherTabSave(store, event, () => window.localStorage.getItem(STORAGE_KEY));
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
@@ -536,12 +530,19 @@ function WickglowSession({ loaded, children }: { loaded: SavedState; children: R
 
   // Every timer change goes through here (domain/session-run.ts). It is built
   // once: everything handed in reads refs or the store, never a render's values.
+  // True while a sign-out clears the device and signs out: no session may
+  // start then, or it would finish into the next account's progress.
+  const signingOut = useRef(false);
+  const [canStart] = useState(() => () => !signingOut.current);
+  const [holdSessions] = useState(() => (hold: boolean) => {
+    signingOut.current = hold;
+  });
   const run = useSessionRun(store, {
     startMusic: startSessionMusic,
     endMusic: (setting) => musicRef.current.onSessionEnd(setting),
     chime: playEndChime,
     show,
-  });
+  }, canStart);
   // The clock calls this when time runs out.
   const onReachEnd = useRef(run.reachEnd);
 
@@ -806,7 +807,7 @@ function WickglowSession({ loaded, children }: { loaded: SavedState; children: R
       <MusicPlayerContext.Provider value={music.player}>
         <ClockProvider session={saved.session} onReachEnd={onReachEnd}>
           {/* The account syncs the same store (domain/account-sync.ts). */}
-          <AccountProvider store={store} notify={showToast}>
+          <AccountProvider store={store} notify={showToast} stopSession={stableActions.reset} holdSessions={holdSessions}>
             {now == null ? <View style={{ flex: 1, backgroundColor: colors.bgBase }} /> : children}
             <KeepProgressCard />
             <SignOutCard />

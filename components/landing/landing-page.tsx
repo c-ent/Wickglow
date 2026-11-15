@@ -252,7 +252,7 @@ export function LandingPage() {
       </Reveal>
 
       {/* Gallery */}
-      <View style={[styles.section, styles.sectionWide]}>
+      <View style={styles.section}>
         <SectionHeading eyebrow="See it in action" title="A quiet place to get the work done" />
         <Reveal>
           <Gallery slides={GALLERY} />
@@ -453,8 +453,15 @@ function Gallery({ slides }: { slides: readonly GallerySlide[] }) {
   };
 
   const step = (direction: 1 | -1) => {
-    const base = pendingRef.current ?? rawRef.current;
-    const target = Math.max(0, Math.min(count + 1, base + direction));
+    let base = pendingRef.current ?? rawRef.current;
+    // Already on (or heading to) a copy at either end: jump to the real slide
+    // it copies, which looks the same, and step on from there, so the press
+    // is not lost against the end of the strip.
+    if (base + direction > count + 1 || base + direction < 0) {
+      base = base === 0 ? count : 1;
+      scrollToRaw(base, false);
+    }
+    const target = base + direction;
     pendingRef.current = target;
     scrollToRaw(target, motion);
   };
@@ -568,7 +575,11 @@ function Gallery({ slides }: { slides: readonly GallerySlide[] }) {
               role="tab"
               aria-selected={on}
               aria-label={`Show the ${slide.label} screenshot`}
-              onPress={() => scrollToRaw(position + 1, motion)}
+              onPress={() => {
+                // A tab names its slide outright: an arrow press still settling must not add to it.
+                pendingRef.current = null;
+                scrollToRaw(position + 1, motion);
+              }}
               style={[styles.tab, on && styles.tabOn]}
             >
               <Text style={[styles.tabText, on && styles.tabTextOn]}>{slide.label}</Text>
@@ -696,8 +707,6 @@ function HeroWidgets() {
 
 const MAX = 1040;
 const WIDE = 1296;
-/** The gallery breaks out of the text column so the screenshots read at a useful size. */
-const GALLERY_MAX = 1200;
 
 const styles = StyleSheet.create({
   page: {
@@ -1105,9 +1114,6 @@ const styles = StyleSheet.create({
     backgroundColor: fade('#FFFFFF', 0.05),
     padding: 8,
     boxShadow: `0 30px 80px ${fade('#000000', 0.55)}, 0 0 120px ${fade(colors.flame3, 0.1)}`,
-  },
-  sectionWide: {
-    maxWidth: GALLERY_MAX,
   },
   galleryGlow: web({
     position: 'absolute',

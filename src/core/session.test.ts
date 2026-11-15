@@ -19,7 +19,7 @@ function progressAt(now: number, focus = 25): ProgressState {
     tasks: [task({ id: 1, text: 'Read chapter 5' })],
     activeId: 1,
     cycle: 0,
-    log: { sessions: [], legacy: [] },
+    log: { sessions: [] },
   };
 }
 

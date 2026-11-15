@@ -12,12 +12,13 @@ import { MOODS, monthGrid } from '@/components/wickglow/theme';
 import { AMBIENT_SOUNDS } from '@/src/core/ambient';
 import type { DayHistory } from '@/src/core/types';
 import { colors, fade, fonts } from '@/src/theme/tokens';
-import { SAMPLE_LEVEL, useIsClient, web } from './web-helpers';
+import { SAMPLE_LEVEL, useInert, useIsClient, web } from './web-helpers';
 
 // The "What's inside" pictures on the web landing page. They are the app's own
 // pieces, drawn with the app's own components and styles, so they look exactly
 // like the app, fed with sample values instead of a live session. Each one is
-// decoration: hidden from screen readers and not pressable.
+// decoration: hidden from screen readers and not pressable, and the ones built
+// from the app's buttons are inert, so they take no keyboard focus either.
 
 const AMBER = MOODS.find((mood) => mood.id === 'amber') ?? MOODS[0];
 const NO_TOUCH = 'none' as const;
@@ -81,8 +82,9 @@ export function TasksPreview() {
     { id: 2, title: 'Practice problems', done: false, active: false, subs: '+ Sub' },
     { id: 3, title: 'Read the intro', done: true, active: false, subs: '' },
   ];
+  const inert = useInert<React.ComponentRef<typeof View>>();
   return (
-    <View style={[task.list, { marginTop: 0 }]} aria-hidden pointerEvents={NO_TOUCH}>
+    <View ref={inert} style={[task.list, { marginTop: 0 }]} aria-hidden pointerEvents={NO_TOUCH}>
       {rows.map((row) => (
         <View
           key={row.id}
@@ -243,8 +245,9 @@ export function CalendarNotes() {
 
 /** The app's month calendar, with each day shaded by the minutes studied. */
 export function CalendarPreview() {
+  const inert = useInert<React.ComponentRef<typeof View>>();
   return (
-    <View style={styles.calendar} aria-hidden pointerEvents={NO_TOUCH}>
+    <View ref={inert} style={styles.calendar} aria-hidden pointerEvents={NO_TOUCH}>
       <View style={panel.monthHead}>
         <View style={panel.monthNav}>
           <Text style={panel.monthNavText}>‹</Text>

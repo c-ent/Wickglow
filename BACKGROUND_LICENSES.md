@@ -50,7 +50,7 @@ Who made the animated versions is not recorded. If someone other than the owner 
 
 ## Pixabay videos
 
-Pixabay Content License (https://pixabay.com/service/license-summary/): free for commercial and non-commercial use, no attribution required, may be modified. Not allowed: selling or distributing the video on its own unaltered, or implying endorsement. Shown as a background inside the app, which is allowed. Credit is given anyway, as Pixabay asks.
+Pixabay Content License (https://pixabay.com/service/license-summary/): free for commercial and non-commercial use, no attribution required, may be modified. Not allowed: selling or distributing the video on its own (standalone), including a version with only minor changes such as a re-encode, trim or resize, or implying endorsement. Shown as a background inside the app, which is allowed. Credit is given anyway, as Pixabay asks.
 
 | File | Length | License | Source / artist |
 | :--- | :----- | :------ | :--------------- |

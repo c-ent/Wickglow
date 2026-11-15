@@ -330,9 +330,10 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
             const overdue = isOverdue(task.date, lamp.now);
             // "Active" = the task the timer's sessions count toward.
             const active = lamp.activeTask?.id === task.id && !task.done;
-            // Date, subtasks, focus, edit and delete.
+            // Date, subtasks, focus, edit and delete. One group, so on a narrow
+            // phone it moves under the title as a whole instead of squeezing it.
             const controls = (
-              <>
+              <View style={styles.controls}>
                 {task.done ? null : (
                   <DueControl
                     value={task.date ?? ''}
@@ -379,7 +380,7 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
                 <IconButton label={`Delete ${task.text}`} onPress={() => removeTask(task.id)}>
                   <TrashIcon size={14} color={fade(colors.textPrimary, 0.45)} />
                 </IconButton>
-              </>
+              </View>
             );
             return (
               <View
@@ -389,7 +390,9 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
                   active ? { borderColor: fade(accent, 0.7), backgroundColor: fade(accent, 0.07) } : null,
                 ]}
               >
-                <View style={styles.row}>
+                {/* On a phone or tablet the title keeps a usable width: when the
+                    row is too narrow for it and the controls, they wrap under it. */}
+                <View style={[styles.row, mobile ? styles.rowWrap : null]}>
                   <CheckBox
                     on={task.done}
                     accent={accent}
@@ -412,7 +415,7 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
                         if (event.nativeEvent.key === 'Enter') commitEdit(task.id, editValue.current, true);
                         if (event.nativeEvent.key === 'Escape') commitEdit(task.id, '', false);
                       }}
-                      style={styles.edit}
+                      style={[styles.edit, mobile ? styles.titleRoom : null]}
                     />
                   ) : (
                     <Pressable
@@ -421,10 +424,9 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
                       accessibilityLabel={active ? `Stop focusing on ${task.text}` : `Focus on ${task.text}`}
                       disabled={task.done}
                       onPress={() => focusTask(task.id)}
-                      style={styles.titleBtn}
+                      style={[styles.titleBtn, mobile ? styles.titleRoom : null]}
                     >
-                      {/* On a phone or tablet the title wraps (up to 3 lines)
-                          so the date and buttons can stay on the same row. */}
+                      {/* On a phone or tablet the title wraps (up to 3 lines). */}
                       <Text style={[styles.title, task.done ? styles.done : null]} numberOfLines={mobile ? 3 : 1}>{task.text}</Text>
                     </Pressable>
                   )}
@@ -595,6 +597,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingLeft: 12,
     paddingRight: 6,
+  },
+  rowWrap: {
+    flexWrap: 'wrap',
+    rowGap: 4,
+  },
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 'auto',
+  },
+  // The narrowest a title (or its edit field) gets before the controls wrap.
+  titleRoom: {
+    minWidth: 120,
   },
   check: {
     width: 20,

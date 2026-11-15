@@ -14,7 +14,7 @@ import {
   type QueryDocumentSnapshot,
   type QuerySnapshot,
 } from 'firebase/firestore';
-import { MAX_DAY_MINUTES, MAX_DAY_TASKS, sessionRecord, type DayRecord, type SessionRecord } from '@/src/core/progress-log';
+import { sessionRecord, type SessionRecord } from '@/src/core/progress-log';
 import type { RemoteProgress, RemoteTask, SyncPush } from '@/src/core/sync';
 import { cleanTitle, parseDueDate } from '@/src/core/tasks';
 import { z } from 'zod';
@@ -25,15 +25,14 @@ import { DAY_KEY, dayKey, readAs } from './lenient';
 // "anything new since my last sync?" is a single query (Firestore charges at
 // least one read per query, even an empty one). Rules: firestore.rules.
 //
-//   users/{uid}/records/s_{end}-{minutes}  a session   { kind: 's', end, minutes, task, day?, at }   create-only
+//   users/{uid}/records/s_{end}-{minutes}  a session   { kind: 's', end, minutes, task, day, at }   create-only
 //                                           (`day`: the writer's local day, which every device files it on)
-//   users/{uid}/records/d_{calendarKey}    a pre-sync day total { kind: 'd', minutes, sessions, tasks, at }   create-only
 //   users/{uid}/records/t_{taskId}         a task      { kind: 't', text, done, doneOn, parentId, date, updatedAt, deleted: false, at }
 //                                           or its tombstone { kind: 't', deleted: true, updatedAt, at }, plus doneOn if it was finished
 //   users/{uid}/records/reset              { kind: 'r', epoch, at }, raised when a device's progress replaces the account's
 //
 // `at` is the server's write time on every record; a device asks only for
-// records with `at` at or after its last sync. Every s/d/t record also carries
+// records with `at` at or after its last sync. Every s/t record also carries
 // `epoch`, the reset it was written under, which the rules check against the
 // marker; records from an older reset are ignored and cleared. Every record read is checked
 // before it reaches the app. Writes go one by one, not in a batch, so one
@@ -80,9 +79,7 @@ function readTask(id: number, data: DocumentData): RemoteTask | null {
   return task ? { id, ...task, deleted: false } : null;
 }
 
-const dayRecordSchema = z.object({ minutes: upTo(MAX_DAY_MINUTES), sessions: upTo(MAX_DAY_MINUTES / 10), tasks: upTo(MAX_DAY_TASKS) });
-
-/** The reset a record was written under. Records from before epochs existed count as 0. */
+/** The reset a record was written under; 0 when it has none. */
 function recordEpoch(data: DocumentData): number {
   return readAs(upTo(Number.MAX_SAFE_INTEGER), data.epoch, 0);
 }
@@ -97,7 +94,6 @@ function recordEpoch(data: DocumentData): number {
  */
 function readRecords(docs: QueryDocumentSnapshot<DocumentData>[]): { progress: RemoteProgress; stale: QueryDocumentSnapshot<DocumentData>[] } {
   const sessions: SessionRecord[] = [];
-  const legacy: DayRecord[] = [];
   const tasks: RemoteTask[] = [];
   const stale: QueryDocumentSnapshot<DocumentData>[] = [];
   let epoch: number | null = null;
@@ -116,14 +112,10 @@ function readRecords(docs: QueryDocumentSnapshot<DocumentData>[]): { progress: R
       stale.push(item);
     } else if (id.startsWith('s_')) {
       const record = typeof data.end === 'number' && typeof data.minutes === 'number'
-        ? sessionRecord(data.end, data.minutes, typeof data.task === 'number' ? data.task : null, data.day)
+        // `?? null`: a record with no `day` is rejected, not given this device's day.
+        ? sessionRecord(data.end, data.minutes, typeof data.task === 'number' ? data.task : null, data.day ?? null)
         : null;
       if (record && `s_${record.id}` === id) sessions.push(record);
-    } else if (id.startsWith('d_')) {
-      const d = id.slice(2);
-      if (!DAY_KEY.test(d)) continue;
-      const day = readAs(dayRecordSchema, data, null);
-      if (day) legacy.push({ d, ...day });
     } else if (id.startsWith('t_')) {
       const taskId = Number(id.slice(2));
       if (!Number.isSafeInteger(taskId)) continue;
@@ -131,7 +123,7 @@ function readRecords(docs: QueryDocumentSnapshot<DocumentData>[]): { progress: R
       if (task) tasks.push(task);
     }
   }
-  return { progress: { sessions, legacy, tasks, epoch, latest }, stale };
+  return { progress: { sessions, tasks, epoch, latest }, stale };
 }
 
 /**
@@ -210,11 +202,9 @@ export async function pushProgress(uid: string, push: SyncPush, epoch: number): 
   const { db, path } = records(uid);
   const at = serverTimestamp();
   const writes: Promise<void>[] = [];
-  // Sessions and day records are create-only. Sending one the account already
-  // holds (its write landed, but no confirmed read has shown it yet) is refused
-  // as an update: that is not a failure, the record is saved. For a day record
-  // whose numbers differ, the account's copy wins, as the sync already does
-  // (src/core/sync.ts), and the device takes it on its next read.
+  // Sessions are create-only. Sending one the account already holds (its write
+  // landed, but no confirmed read has shown it yet) is refused as an update:
+  // that is not a failure, the record is saved.
   const createOnce = (ref: ReturnType<typeof doc>, data: DocumentData) => setDoc(ref, data).catch(async (error: unknown) => {
     if ((error as { code?: unknown } | null)?.code !== 'permission-denied') throw error;
     const existing = await getDocFromServer(ref);
@@ -222,13 +212,10 @@ export async function pushProgress(uid: string, push: SyncPush, epoch: number): 
     throw error;
   });
   for (const record of push.sessions) {
-    // `day`: the day it counted on where it was finished. Older records lack it.
+    // `day`: the day it counted on where it was finished.
     writes.push(createOnce(doc(db, path, `s_${record.id}`), {
-      kind: 's', end: record.end, minutes: record.minutes, task: record.task, ...(record.d ? { day: record.d } : {}), epoch, at,
+      kind: 's', end: record.end, minutes: record.minutes, task: record.task, day: record.d, epoch, at,
     }));
-  }
-  for (const record of push.days) {
-    writes.push(createOnce(doc(db, path, `d_${record.d}`), { kind: 'd', minutes: record.minutes, sessions: record.sessions, tasks: record.tasks, epoch, at }));
   }
   // A live task edit older than the account's copy is refused (the rules keep
   // the latest edit). That is not a failure: the newer edit is already saved,

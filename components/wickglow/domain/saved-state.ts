@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { MixLevels, silentAmbient } from '@/src/core/ambient';
 import { idleSession, SessionClock } from '@/src/core/clock';
 import { emptyDay, restoreDayHistory } from '@/src/core/history';
-import { emptyLog, MAX_DAY_MINUTES, MAX_DAY_TASKS, ProgressLog, sessionRecord, type DayRecord, type FinishedRecord, type SessionRecord } from '@/src/core/progress-log';
+import { emptyLog, ProgressLog, sessionRecord, type FinishedRecord, type SessionRecord } from '@/src/core/progress-log';
 import type { SyncMeta } from '@/src/core/sync';
 import { OwnTrack, parseOwnTracks } from '@/src/core/own-tracks';
 import { parseStreamLinks, StreamLink } from '@/src/core/stream-links';
@@ -97,6 +97,7 @@ export function createInitialState(now = Date.now()): SavedState {
  * history, tasks, the log and the link to the account) goes back to a fresh
  * install's, so the next account to sign in here cannot take it. Settings,
  * sounds, scenes and the timer stay: they are per device and never synced.
+ * (Signing out resets a running session first, see `leave` in account.tsx.)
  */
 export function withoutProgress(state: SavedState, now = Date.now()): SavedState {
   const fresh = createInitialState(now);
@@ -291,33 +292,20 @@ function readHistory(value: unknown): DayHistory {
   return history;
 }
 
-// `task` and `d` are checked by `sessionRecord`, and either may be missing.
+// `task` and `d` are checked by `sessionRecord`; a session without `d` is dropped.
 const logSessionSchema = z.object({ end: z.number(), minutes: z.number(), task: z.unknown().optional(), d: z.unknown().optional() });
-const logDaySchema = z.object({ d: dayKey, minutes: count, sessions: count, tasks: count });
 const finishedSchema = z.object({ task: z.int(), d: dayKey });
 
 function readLog(value: unknown): ProgressLog {
   if (!value || typeof value !== 'object') return emptyLog();
-  const log = value as { sessions?: unknown; legacy?: unknown; finished?: unknown };
+  const log = value as { sessions?: unknown; finished?: unknown };
   const sessions: SessionRecord[] = [];
   const ids = new Set<string>();
   for (const entry of validItems(logSessionSchema, log.sessions)) {
-    const record = sessionRecord(entry.end, entry.minutes, typeof entry.task === 'number' ? entry.task : null, entry.d);
+    const record = sessionRecord(entry.end, entry.minutes, typeof entry.task === 'number' ? entry.task : null, entry.d ?? null);
     if (!record || ids.has(record.id)) continue;
     ids.add(record.id);
     sessions.push(record);
-  }
-  const legacy: DayRecord[] = [];
-  const days = new Set<string>();
-  for (const entry of validItems(logDaySchema, log.legacy)) {
-    if (days.has(entry.d)) continue;
-    days.add(entry.d);
-    legacy.push({
-      d: entry.d,
-      minutes: Math.min(MAX_DAY_MINUTES, Math.floor(entry.minutes)),
-      sessions: Math.min(MAX_DAY_MINUTES / 10, Math.floor(entry.sessions)),
-      tasks: Math.min(MAX_DAY_TASKS, Math.floor(entry.tasks)),
-    });
   }
   const finished: FinishedRecord[] = [];
   const finishedIds = new Set<number>();
@@ -328,7 +316,6 @@ function readLog(value: unknown): ProgressLog {
   }
   return {
     sessions: sessions.sort((a, b) => a.end - b.end),
-    legacy,
     ...(finished.length > 0 ? { finished } : {}),
   };
 }
@@ -353,7 +340,6 @@ function readSyncMeta(value: unknown): SyncMeta | null {
     epoch: Math.floor(base.epoch),
     since: Math.floor(base.since),
     sessions: validItems(z.string(), meta.sessions),
-    days: validItems(z.string(), meta.days),
     tasks: Object.fromEntries(validEntries(knownTaskSchema, meta.tasks)),
     tombs: Object.fromEntries(validEntries(z.number(), meta.tombs)),
     ...(checked != null ? { checked: Math.floor(checked) } : {}),

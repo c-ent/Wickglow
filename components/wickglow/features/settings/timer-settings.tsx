@@ -6,6 +6,8 @@ import { useWickglow } from '@/components/wickglow/logic';
 import { panelStyles as styles } from '@/components/wickglow/shared/panel-styles';
 import { PRESETS, TimerCfg } from '@/components/wickglow/theme';
 import { useTone } from '@/components/wickglow/features/tone';
+import { LANDING_HOME_PATH } from '@/components/landing/returning-visitor';
+import { LogoMark } from '@/components/wickglow/shared/logo';
 
 /**
  * The Timer settings panel: length presets and custom lengths, auto-start,
@@ -62,9 +64,44 @@ export function TimerSettings({ mobile = false }: { mobile?: boolean }) {
         <Text style={styles.note}>Lower drops the music to half until the next session starts. The chime still plays.</Text>
       </View>
       {mobile ? null : longBreakNote}
+      <AboutLink />
     </View>
   );
 }
+
+// Web only: a quiet link to the landing page, the last line of Timer settings.
+// It opens in a new tab so a running session and the music keep going here.
+// Android and iOS have no landing page (`/` is the app there).
+function AboutLink() {
+  if (Platform.OS !== 'web') return null;
+  const webLink = {
+    href: LANDING_HOME_PATH,
+    role: 'link',
+    hrefAttrs: { target: '_blank', rel: 'noopener' },
+  } as object;
+  return (
+    <View {...webLink} style={aboutStyles.link}>
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <LogoMark size={18} />
+      </View>
+      <Text style={[styles.note, aboutStyles.text]}>About Wickglow</Text>
+    </View>
+  );
+}
+
+const aboutStyles = StyleSheet.create({
+  link: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 20,
+  },
+  text: {
+    marginTop: 0,
+    textDecorationLine: 'underline',
+  },
+});
 
 // A number field for minutes. It keeps its own `text` so you can clear the box
 // and type freely; the value is only validated and saved when you finish

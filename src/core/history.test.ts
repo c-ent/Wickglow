@@ -13,7 +13,7 @@ function stateOn(now: number, minutes: number): ProgressState {
     tasks: [],
     activeId: null,
     cycle: 1,
-    log: { sessions: [], legacy: [] },
+    log: { sessions: [] },
   };
 }
 

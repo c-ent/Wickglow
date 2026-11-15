@@ -18,6 +18,9 @@ export const APP_VISITED_KEY = 'wickglow:app-visited';
 
 export const APP_PATH = '/app';
 
+/** The landing page for someone who has used the app: `?home` stops the script below sending them back. */
+export const LANDING_HOME_PATH = '/?home';
+
 /** The addresses that show the landing page, so the ones a returning visitor skips. */
 const LANDING_PATHS = ['/', '/download'];
 

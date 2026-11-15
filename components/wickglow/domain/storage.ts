@@ -45,6 +45,11 @@ async function readWickglowState(): Promise<SavedState> {
   return parseSavedState(raw);
 }
 
+/** True while saves are skipped because the last load could not read storage. */
+export function savesSkipped(): boolean {
+  return readFailed;
+}
+
 /**
  * Writes the state, unless the last load failed. Storage can be unavailable in
  * private browsing. Resolves false when the write itself failed, so the save

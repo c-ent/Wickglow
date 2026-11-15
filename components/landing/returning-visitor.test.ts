@@ -1,4 +1,4 @@
-import { APP_VISITED_KEY, RETURNING_VISITOR_SCRIPT } from './returning-visitor';
+import { APP_VISITED_KEY, LANDING_HOME_PATH, RETURNING_VISITOR_SCRIPT } from './returning-visitor';
 
 /** Runs the head script against a fake page; returns where it sent the visitor, or null. */
 function run(url: string, stored: Record<string, string> = {}): string | null {
@@ -35,6 +35,10 @@ describe('returning visitor script', () => {
   it('shows the landing page anyway with ?home', () => {
     expect(run('/?home', { [APP_VISITED_KEY]: '1' })).toBeNull();
     expect(run('/?a=1&home=1', { [APP_VISITED_KEY]: '1' })).toBeNull();
+  });
+
+  it('lets the app link to the landing page without being sent back', () => {
+    expect(run(LANDING_HOME_PATH, { [APP_VISITED_KEY]: '1' })).toBeNull();
   });
 
   it('does nothing on other pages', () => {

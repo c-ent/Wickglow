@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { TextStyle, ViewStyle } from 'react-native';
 import { levelInfo } from '@/src/core/xp';
 
@@ -15,6 +15,21 @@ function subscribe() {
  */
 export function useIsClient(): boolean {
   return useSyncExternalStore(subscribe, () => true, () => false);
+}
+
+/**
+ * A ref that makes its element `inert` in the browser: nothing inside can be
+ * focused, clicked or read out. For the sample pictures, whose checkboxes and
+ * day buttons are the app's real ones. react-native-web does not pass `inert`
+ * through as a prop, so it is set on the element once mounted.
+ */
+export function useInert<T>() {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const node = ref.current as unknown as { inert?: boolean } | null;
+    if (node && typeof document !== 'undefined') node.inert = true;
+  }, []);
+  return ref;
 }
 
 /** Web-only CSS that React Native's style types do not list (gradients, clamp sizes, transitions). */

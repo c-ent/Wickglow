@@ -1,4 +1,4 @@
-import { DayRecord, FinishedRecord, hasProgress, ProgressLog, SessionRecord } from './progress-log';
+import { FinishedRecord, hasProgress, ProgressLog, SessionRecord } from './progress-log';
 import { Task } from './types';
 
 // How a device's progress and an account's progress are combined. Pure: the
@@ -13,7 +13,7 @@ import { Task } from './types';
 //   after the account was reset from another device). Here a record the device
 //   once saw that is missing was removed there, and is dropped.
 //
-// - Sessions and day records are kept once each, by id. One the account has
+// - Sessions are kept once each, by id. One the account has
 //   not confirmed is pushed.
 // - Tasks: the latest edit wins, and a delete wins over any edit. An edit
 //   carries the time it was made on its device (`SyncMeta.edits`), not the
@@ -57,7 +57,6 @@ export interface RemoteTask {
 
 export interface RemoteProgress {
   sessions: SessionRecord[];
-  legacy: DayRecord[];
   tasks: RemoteTask[];
   /** The account's reset count, when the reset marker was among the records read. */
   epoch: number | null;
@@ -74,8 +73,6 @@ export interface SyncMeta {
   since: number;
   /** Session ids seen in the account. */
   sessions: string[];
-  /** Day record keys seen in the account. */
-  days: string[];
   /**
    * Each live task as last seen in the account: when it was written and its
    * synced content. `sentDoneAt`: the time of the newest finished copy this
@@ -88,7 +85,7 @@ export interface SyncMeta {
   /**
    * When this device last had a confirmed read, on its own clock. Away longer
    * than tombstones are kept means a full read (`since` cannot tell: it stays
-   * old while nobody writes). Missing on a link from before it existed.
+   * old while nobody writes). Missing until the first confirmed read.
    */
   checked?: number;
   /** Ids of deleted finished tasks whose credit was seen in the account. */
@@ -109,7 +106,6 @@ export interface KnownTask {
 
 export interface SyncPush {
   sessions: SessionRecord[];
-  days: DayRecord[];
   tasks: RemoteTask[];
   /** Task ids whose tombstones are older than 30 days and can be deleted. */
   purge: number[];
@@ -151,16 +147,16 @@ function sent(known: KnownTask | undefined, mine: Task, at: number): KnownTask {
 }
 
 export function emptyMeta(uid: string, epoch = 0, since = 0): SyncMeta {
-  return { uid, epoch, since, sessions: [], days: [], tasks: {}, tombs: {} };
+  return { uid, epoch, since, sessions: [], tasks: {}, tombs: {} };
 }
 
 export function emptyRemote(): RemoteProgress {
-  return { sessions: [], legacy: [], tasks: [], epoch: null, latest: 0 };
+  return { sessions: [], tasks: [], epoch: null, latest: 0 };
 }
 
 /** True when the account holds anything worth keeping. */
 export function remoteHasProgress(remote: RemoteProgress): boolean {
-  return remote.sessions.length > 0 || remote.legacy.length > 0 || remote.tasks.some((task) => !task.deleted || task.doneOn != null);
+  return remote.sessions.length > 0 || remote.tasks.some((task) => !task.deleted || task.doneOn != null);
 }
 
 type SyncedFields = Pick<Task, 'text' | 'done' | 'doneOn' | 'parentId' | 'date'>;
@@ -203,7 +199,7 @@ function tombstone(id: number, now: number, doneOn: string | null = null): Remot
 
 /** First sign-in, when the account's copy is kept: the device takes it as it is. */
 export function adoptRemote(remote: RemoteProgress, uid: string, now: number): Reconciled {
-  return reconcile({ log: { sessions: [], legacy: [] }, tasks: [] }, emptyMeta(uid), remote, now, true);
+  return reconcile({ log: { sessions: [] }, tasks: [] }, emptyMeta(uid), remote, now, true);
 }
 
 /**
@@ -218,7 +214,7 @@ export function reconcile(
   now: number,
   full: boolean,
 ): Reconciled {
-  const push: SyncPush = { sessions: [], days: [], tasks: [], purge: [] };
+  const push: SyncPush = { sessions: [], tasks: [], purge: [] };
 
   // Sessions.
   const seenSessions = new Set(meta.sessions);
@@ -231,19 +227,6 @@ export function reconcile(
     if (!there && !seenSessions.has(record.id)) push.sessions.push(record);
   }
   for (const [id, record] of remoteSessions) if (!sessions.has(id)) sessions.set(id, record);
-
-  // Day records.
-  const seenDays = new Set(meta.days);
-  const remoteDays = new Map(remote.legacy.map((record) => [record.d, record]));
-  const legacy = new Map<string, DayRecord>();
-  for (const record of local.log.legacy) {
-    const there = remoteDays.get(record.d);
-    if (full && !there && seenDays.has(record.d)) continue;
-    // The account's copy wins on a clash.
-    legacy.set(record.d, there ?? record);
-    if (!there && !seenDays.has(record.d)) push.days.push(record);
-  }
-  for (const [d, record] of remoteDays) if (!legacy.has(d)) legacy.set(d, record);
 
   // Deleted finished tasks, kept once each by task id, like sessions. The
   // account's copy is the task's tombstone with `doneOn`.
@@ -396,7 +379,6 @@ export function reconcile(
   return {
     log: {
       sessions: [...sessions.values()].sort((a, b) => a.end - b.end),
-      legacy: [...legacy.values()],
       ...(finished.size > 0 || local.log.finished ? { finished: [...finished.values()] } : {}),
     },
     tasks,
@@ -407,7 +389,6 @@ export function reconcile(
       // Only what the account has confirmed. A pushed record joins once a
       // confirmed read includes it, so a push that never lands is sent again.
       sessions: full ? [...remoteSessions.keys()] : union(meta.sessions, remoteSessions.keys()),
-      days: full ? [...remoteDays.keys()] : union(meta.days, remoteDays.keys()),
       tasks: nextMeta,
       tombs,
       ...(meta.checked != null ? { checked: meta.checked } : {}),
@@ -444,7 +425,7 @@ function normaliseTasks(tasks: Task[]): Task[] {
 
 /**
  * True when this device holds progress the account `uid` has not confirmed:
- * a session, day record, task edit, delete or credit still to be sent or
+ * a session, task edit, delete or credit still to be sent or
  * acknowledged. A device not linked to that account (never linked, linked to
  * another, or "Decide later") has all of its progress unsaved. Old tombstones
  * waiting to be purged are not progress. Used before a sign-out clears the
@@ -458,7 +439,7 @@ export function hasUnsaved(
 ): boolean {
   if (!meta || meta.uid !== uid) return hasProgress(local.log, local.tasks);
   const { push } = reconcile(local, meta, emptyRemote(), now, false);
-  return push.sessions.length > 0 || push.days.length > 0 || push.tasks.length > 0;
+  return push.sessions.length > 0 || push.tasks.length > 0;
 }
 
 /** True when the reconcile changed nothing on the device and has nothing to push. */
@@ -467,9 +448,8 @@ export function isQuiet(
   after: Reconciled,
 ): boolean {
   const { push } = after;
-  if (push.sessions.length || push.days.length || push.tasks.length || push.purge.length) return false;
+  if (push.sessions.length || push.tasks.length || push.purge.length) return false;
   if (before.log.sessions.length !== after.log.sessions.length) return false;
-  if (before.log.legacy.length !== after.log.legacy.length) return false;
   if ((before.log.finished?.length ?? 0) !== (after.log.finished?.length ?? 0)) return false;
   if (before.tasks.length !== after.tasks.length) return false;
   for (let index = 0; index < before.tasks.length; index += 1) {
