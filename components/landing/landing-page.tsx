@@ -734,11 +734,12 @@ const styles = StyleSheet.create({
     filter: 'blur(140px)',
   },
   glowHero: {
-    top: 380,
+    // A warm glow behind the hero heading.
+    top: 150,
     width: 900,
-    height: 560,
-    backgroundColor: fade(colors.flame3, 0.26),
-    filter: 'blur(150px)',
+    height: 600,
+    backgroundColor: fade(colors.flame3, 0.3),
+    filter: 'blur(180px)',
   },
   glowRight: {
     top: 2100,

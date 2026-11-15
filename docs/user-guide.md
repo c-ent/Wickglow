@@ -20,7 +20,7 @@ It runs on Android and in a web browser. You don't need an account.
 
 ## Your first session
 
-1. Open Wickglow.
+1. Open Wickglow. The first time, a short tour points out where everything is. Tap **Next** to follow it, or **Skip**.
 2. Tap the candle, or **Light the candle**. A 25-minute focus session starts.
 3. Study. After a few seconds without a touch, the screen fades so only the candle and the time stay visible. Tap anywhere to bring everything back.
 4. When the session ends, the flame dims, a soft chime plays and you get a notification. You earn XP and see a short message.
@@ -56,6 +56,8 @@ A reset or skipped focus session earns nothing.
 
 ### Other timer settings
 
+- **Show tour again**: replays the short tour that points out the timer, music, ambient sounds, scenes, tasks and progress. It shows once on its own the first time you open Wickglow on a device.
+
 - **Start the next session automatically**: when a session ends, the next one starts on its own.
 - **Hide the interface while I focus**: the fade during focus. Turn it off if you'd rather see everything all the time.
 - **Music at session end**: what your music does when a focus session ends.
@@ -75,7 +77,7 @@ Wickglow asks for notification permission the first time you start a session. If
 
 Use tasks to keep track of what you're studying.
 
-- **Add a task**: type a title, add a due date if you want one, and tap **Add**.
+- **Add a task**: type a title, add a due date if you want one (tap the calendar button to pick a day; **Clear** in the Android calendar removes it), and tap **Add**.
 - **Focus on a task**: tap its title or its target button. The task then shows under the timer. Tap it again to clear it. You can also tap the line under the timer to pick a task.
 - **Finish a task**: tick its checkbox. Finished tasks move under the open ones.
 - **Edit or delete**: use the buttons on the task row.

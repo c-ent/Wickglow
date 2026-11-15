@@ -1,9 +1,12 @@
 import { isOverdue, parseDueDate } from '@/src/core/tasks';
+import type { Task } from '@/src/core/types';
 import { colors, fade, fonts, rounded } from '@/src/theme/tokens';
-import React, { useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { FlashList, useRecyclingState } from '@shopify/flash-list';
 import { useWickglow } from '@/components/wickglow/logic';
 import { useTone } from '@/components/wickglow/features/tone';
+import { openDuePicker } from '@/components/wickglow/features/tasks/due-picker';
 import { CalendarIcon, ChevronIcon, CloseIcon, PencilIcon, TargetIcon, TrashIcon } from '@/components/wickglow/shared/icons';
 
 /**
@@ -15,6 +18,11 @@ import { CalendarIcon, ChevronIcon, CloseIcon, PencilIcon, TargetIcon, TrashIcon
  * subtask checks the parent, only the parent counts for the daily quest, ...)
  * live in src/core/tasks.ts. Its UI-only state is: the draft text/date, which
  * row is being edited, and the subtask drafts.
+ *
+ * Each row is a memoized `TaskItem`, and the drafts live in the row or field
+ * they belong to, so typing or changing one task redraws only that row. With
+ * many tasks and subtasks, redrawing every row and its icons on each keystroke
+ * made Android lag.
  */
 
 // Date shown on a task, in the user's own locale ("Nov 9, 2026").
@@ -76,9 +84,10 @@ function dateColor(value: string, overdue: boolean, accent: string, compact: boo
   return accent;
 }
 
-// The due-date field. Two different implementations, because the platforms
-// differ: web gets a calendar button over a hidden native date input; Android/iOS
-// get a plain text field where the user types YYYY-MM-DD.
+// The due-date field. A calendar button on web and Android: on web it opens a
+// hidden browser date input, on Android the system date dialog
+// (`openDuePicker`, due-picker.android.ts). iOS has no dialog wired up, so it
+// keeps a plain text field where the user types YYYY-MM-DD.
 // `compact` is the small version used inside a task row.
 function DueControl({
   value,
@@ -103,7 +112,8 @@ function DueControl({
   const shown = value && parseDueDate(value) ? formatDue(value) : '';
   const color = dateColor(value, overdue, accent, compact);
 
-  if (Platform.OS !== 'web') {
+  const web = Platform.OS === 'web';
+  if (!web && !openDuePicker) {
     // The add form has no validation step in between, so every keystroke goes up
     // and Add never reads a stale date. A task row keeps the draft until editing
     // ends, because `setTaskDate` validates the finished value.
@@ -148,7 +158,7 @@ function DueControl({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
-        onPress={() => openPicker(inputRef.current)}
+        onPress={() => (web ? openPicker(inputRef.current) : openDuePicker?.(value, onChange))}
         style={compact ? styles.dateBtn : [styles.calBtn, value ? { borderColor: fade(accent, 0.5) } : null]}
       >
         {shown ? (
@@ -157,17 +167,19 @@ function DueControl({
           <CalendarIcon size={compact ? 14 : 16} color={fade(colors.textPrimary, 0.45)} />
         )}
       </Pressable>
-      {/* The real date input: invisible and not focusable by Tab. The button
-          above opens it with openPicker(). */}
-      <input
-        ref={inputRef}
-        type="date"
-        value={value}
-        tabIndex={-1}
-        aria-label={label}
-        onChange={(event) => onChange(event.target.value)}
-        style={hiddenDate}
-      />
+      {/* Web: the real date input, invisible and not focusable by Tab. The
+          button above opens it with openPicker(). */}
+      {web ? (
+        <input
+          ref={inputRef}
+          type="date"
+          value={value}
+          tabIndex={-1}
+          aria-label={label}
+          onChange={(event) => onChange(event.target.value)}
+          style={hiddenDate}
+        />
+      ) : null}
     </View>
   );
 }
@@ -240,14 +252,15 @@ function IconButton({ label, onPress, children }: {
   );
 }
 
-export function TaskList({ mobile = false }: { mobile?: boolean }) {
-  const lamp = useWickglow();
-  const { addTask, addSubtask, renameTask, setTaskDate, setTaskOpen, removeTask, toggleTask, focusTask } = lamp;
+/**
+ * Everything both task lists share: the tasks grouped into rows, the edit and
+ * autofocus state, and one stable set of row actions. `rowProps` gives the
+ * props for one task's row.
+ */
+export function useTaskList(mobile: boolean) {
+  const { tasks, now, activeTask, addTask, addSubtask, renameTask, setTaskDate, setTaskOpen, removeTask, toggleTask, focusTask } = useWickglow();
   const tone = useTone(mobile);
-  const [text, setText] = useState(''); // new-task title being typed
-  const [date, setDate] = useState(''); // new-task due date being chosen
   const [editingId, setEditingId] = useState<number | null>(null); // row in edit mode
-  const [subDraft, setSubDraft] = useState<Record<number, string>>({}); // per-task subtask draft
   const [focusSub, setFocusSub] = useState<number | null>(null); // which subtask field to autofocus
   // Refs, not state: the edit field's value changes on every keystroke and we
   // don't want a re-render for each one. They also give blur/Enter handlers the
@@ -255,259 +268,404 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
   const editingRef = useRef<number | null>(null);
   const editValue = useRef('');
   const accent = tone.accent;
-  // Tasks and subtasks are one flat list; subtasks point at a parent by `parentId`.
-  const parents = lamp.tasks.filter((task) => task.parentId == null);
-  // Open tasks first, finished ones sink to the bottom.
-  const ordered = parents.filter((task) => !task.done).concat(parents.filter((task) => task.done));
-  const hasOpen = parents.some((task) => !task.done);
 
-  function beginEdit(id: number, current: string) {
+  // Tasks and subtasks are one flat list; subtasks point at a parent by `parentId`.
+  // Grouped once per change of the list, not once per row on every render.
+  const { ordered, subsOf, hasOpen } = useMemo(() => {
+    const parents = tasks.filter((task) => task.parentId == null);
+    const groups = new Map<number, Task[]>();
+    for (const task of tasks) {
+      if (task.parentId == null) continue;
+      const list = groups.get(task.parentId);
+      if (list) list.push(task);
+      else groups.set(task.parentId, [task]);
+    }
+    return {
+      // Open tasks first, finished ones sink to the bottom.
+      ordered: parents.filter((task) => !task.done).concat(parents.filter((task) => task.done)),
+      subsOf: groups,
+      hasOpen: parents.some((task) => !task.done),
+    };
+  }, [tasks]);
+
+  const beginEdit = useCallback((id: number, current: string) => {
     editingRef.current = id;
     editValue.current = current;
     setEditingId(id);
-  }
+  }, []);
 
   // Finish an edit. Pressing Enter fires both onSubmitEditing and onBlur, so the
   // `editingRef` check makes sure only the first one counts. Escape calls this
   // with keep=false to cancel without saving.
-  function commitEdit(id: number, value: string, keep: boolean) {
+  const commitEdit = useCallback((id: number, value: string, keep: boolean) => {
     if (editingRef.current !== id) return;
     editingRef.current = null;
     setEditingId(null);
     if (keep) renameTask(id, value);
-  }
+  }, [renameTask]);
+
+  const setEditValue = useCallback((value: string) => {
+    editValue.current = value;
+  }, []);
+  const readEditValue = useCallback(() => editValue.current, []);
+
+  // Opening a task's subtasks also asks its new-subtask field to take focus.
+  const toggleOpen = useCallback((id: number, open: boolean) => {
+    if (open) setFocusSub(id);
+    setTaskOpen(id, open);
+  }, [setTaskOpen]);
+
+  const actions = useMemo<RowActions>(() => ({
+    toggle: toggleTask,
+    focus: focusTask,
+    remove: removeTask,
+    setDate: setTaskDate,
+    addSub: addSubtask,
+    toggleOpen,
+    beginEdit,
+    commitEdit,
+    setEditValue,
+    readEditValue,
+  }), [addSubtask, beginEdit, commitEdit, focusTask, readEditValue, removeTask, setEditValue, setTaskDate, toggleOpen, toggleTask]);
+
+  const rowProps = (task: Task): TaskItemProps => {
+    const subs = subsOf.get(task.id) ?? NO_SUBS;
+    return {
+      task,
+      subs,
+      // Overdue only changes the date's color. It never affects rewards.
+      overdue: isOverdue(task.date, now),
+      // "Active" = the task the timer's sessions count toward.
+      active: activeTask?.id === task.id && !task.done,
+      // Only the row being edited (or whose subtask is) learns the id,
+      // so starting an edit does not redraw every other row.
+      editingId: editingId != null && (editingId === task.id || subs.some((sub) => sub.id === editingId)) ? editingId : null,
+      autoFocusSub: focusSub === task.id,
+      accent,
+      mobile,
+      actions,
+    };
+  };
+
+  // What a row's look depends on beyond its task, so a virtualized list knows
+  // to redraw the rows on screen when one of them changes.
+  const extra = useMemo(() => ({ editingId, focusSub, activeId: activeTask?.id ?? null, now, accent }), [accent, activeTask?.id, editingId, focusSub, now]);
+
+  return { ordered, hasOpen, rowProps, extra, accent, ink: tone.ink, addTask };
+}
+
+/**
+ * The same list as its own scroller, drawing only the rows on screen (the
+ * phone Tasks tab and the desktop Tasks card). Opening a long list then costs
+ * a screenful of rows instead of every task, subtask and icon at once. Render
+ * it in place of a ScrollView, not inside one, as with `SoundsScroller`, in a
+ * box with a set height (a list sized by its content would draw every row).
+ * The tablet column has its tasks as leading rows of `SoundsScroller`
+ * instead, so every layout draws only the task rows on screen.
+ */
+export function TaskScroller({ mobile = true, contentContainerStyle }: { mobile?: boolean; contentContainerStyle?: StyleProp<ViewStyle> }) {
+  const { ordered, hasOpen, rowProps, extra, accent, ink, addTask } = useTaskList(mobile);
+  return (
+    <FlashList
+      data={ordered}
+      extraData={extra}
+      keyExtractor={(task) => String(task.id)}
+      contentContainerStyle={contentContainerStyle}
+      // "handled": a tap on a button while the keyboard is open works on the
+      // first tap, instead of only dismissing the keyboard.
+      keyboardShouldPersistTaps="handled"
+      ItemSeparatorComponent={RowGap}
+      ListHeaderComponent={(
+        <View style={styles.scrollerHead}>
+          <AddTaskRow accent={accent} ink={ink} onAdd={addTask} />
+        </View>
+      )}
+      ListEmptyComponent={<Text style={styles.empty}>No tasks yet. Add your first one above.</Text>}
+      ListFooterComponent={hasOpen ? <TaskHint /> : null}
+      getItemType={() => 'task'}
+      renderItem={({ item }) => <TaskItem {...rowProps(item)} />}
+    />
+  );
+}
+
+// The space between two task rows.
+function RowGap() {
+  return <View style={styles.rowGap} />;
+}
+
+export function TaskHint() {
+  return (
+    <View style={styles.hintRow}>
+      <TargetIcon size={14} color={fade(colors.textPrimary, 0.4)} />
+      <Text style={styles.hint}>Click a task to focus on it. It shows under the timer.</Text>
+    </View>
+  );
+}
+
+const NO_SUBS: Task[] = [];
+
+// What a row can do. One stable object, so a memoized row is not redrawn just
+// because its parent rendered.
+interface RowActions {
+  toggle: (id: number) => void;
+  focus: (id: number) => void;
+  remove: (id: number) => void;
+  setDate: (id: number, date: string | null) => void;
+  addSub: (parentId: number, text: string) => void;
+  toggleOpen: (id: number, open: boolean) => void;
+  beginEdit: (id: number, current: string) => void;
+  commitEdit: (id: number, value: string, keep: boolean) => void;
+  setEditValue: (value: string) => void;
+  readEditValue: () => string;
+}
+
+/**
+ * The new-task field, due date and Add button. Its own component, so typing a
+ * title redraws only this row, not every task in the list.
+ */
+export function AddTaskRow({ accent, ink, onAdd }: { accent: string; ink: string; onAdd: (text: string, date: string | null) => void }) {
+  const [text, setText] = useState(''); // new-task title being typed
+  const [date, setDate] = useState(''); // new-task due date being chosen
 
   function add() {
-    addTask(text, date || null);
+    onAdd(text, date || null);
     setText('');
     setDate('');
   }
 
-  function addSub(parentId: number) {
-    const draft = subDraft[parentId] ?? '';
-    if (!draft.trim()) return;
-    addSubtask(parentId, draft);
-    setSubDraft((current) => ({ ...current, [parentId]: '' }));
+  return (
+    <View style={styles.add}>
+      <TextInput
+        value={text}
+        onChangeText={setText}
+        onSubmitEditing={add}
+        placeholder="What are you studying?"
+        placeholderTextColor={fade(colors.textPrimary, 0.4)}
+        accessibilityLabel="Task"
+        maxLength={200}
+        style={styles.field}
+      />
+      <DueControl
+        value={date}
+        onChange={setDate}
+        accent={accent}
+        label={date ? 'Change due date' : 'Add a due date'}
+      />
+      {date ? (
+        <Pressable accessibilityRole="button" accessibilityLabel="Remove date" onPress={() => setDate('')} hitSlop={iconSlop} style={styles.clearDate}>
+          <CloseIcon size={14} color={colors.textMuted} />
+        </Pressable>
+      ) : null}
+      <Pressable accessibilityRole="button" accessibilityLabel="Add task" onPress={add} style={[styles.addBtn, { backgroundColor: accent }]}>
+        <Text style={[styles.addBtnText, { color: ink }]}>Add</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+interface TaskItemProps {
+  task: Task;
+  subs: Task[];
+  overdue: boolean;
+  active: boolean;
+  /** The id being edited when it is this task or one of its subtasks, else null. */
+  editingId: number | null;
+  autoFocusSub: boolean;
+  accent: string;
+  mobile: boolean;
+  actions: RowActions;
+}
+
+// Redraw a row only when something it shows changed. Task objects are kept
+// as they are when untouched, so comparing the subtasks one by one is enough.
+function sameRow(prev: TaskItemProps, next: TaskItemProps): boolean {
+  return (
+    prev.task === next.task
+    && prev.overdue === next.overdue
+    && prev.active === next.active
+    && prev.editingId === next.editingId
+    && prev.autoFocusSub === next.autoFocusSub
+    && prev.accent === next.accent
+    && prev.mobile === next.mobile
+    && prev.actions === next.actions
+    && prev.subs.length === next.subs.length
+    && prev.subs.every((sub, index) => sub === next.subs[index])
+  );
+}
+
+/** One task row with its subtasks and their add field. */
+export const TaskItem = React.memo(function TaskItem({ task, subs, overdue, active, editingId, autoFocusSub, accent, mobile, actions }: TaskItemProps) {
+  // The draft of a new subtask. Kept in the row, so typing it redraws only this
+  // row. A list reuses a row's view for another task as it scrolls, so the
+  // draft starts empty again whenever the row shows a different task. Typing
+  // never changes the row's size, so it skips the list's re-layout.
+  const [subDraft, setSubDraftState] = useRecyclingState('', [task.id]);
+  const setSubDraft = (value: string) => setSubDraftState(value, true);
+  const doneCount = subs.filter((item) => item.done).length;
+
+  function addSub() {
+    if (!subDraft.trim()) return;
+    actions.addSub(task.id, subDraft);
+    setSubDraft('');
   }
 
-  return (
-    <View>
-      <View style={styles.add}>
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          onSubmitEditing={add}
-          placeholder="What are you studying?"
-          placeholderTextColor={fade(colors.textPrimary, 0.4)}
-          accessibilityLabel="Task"
-          maxLength={200}
-          style={styles.field}
-        />
+  // Date, subtasks, focus, edit and delete. One group, so on a narrow
+  // phone it moves under the title as a whole instead of squeezing it.
+  const controls = (
+    <View style={styles.controls}>
+      {task.done ? null : (
         <DueControl
-          value={date}
-          onChange={setDate}
+          value={task.date ?? ''}
+          onChange={(next) => actions.setDate(task.id, next || null)}
           accent={accent}
-          label={date ? 'Change due date' : 'Add a due date'}
+          compact
+          overdue={overdue}
+          label={task.date ? `Change due date for ${task.text}` : `Add a due date to ${task.text}`}
         />
-        {date ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Remove date" onPress={() => setDate('')} hitSlop={iconSlop} style={styles.clearDate}>
-            <CloseIcon size={14} color={colors.textMuted} />
-          </Pressable>
-        ) : null}
-        <Pressable accessibilityRole="button" accessibilityLabel="Add task" onPress={add} style={[styles.addBtn, { backgroundColor: accent }]}>
-          <Text style={[styles.addBtnText, { color: tone.ink }]}>Add</Text>
-        </Pressable>
-      </View>
-
-      {ordered.length === 0 ? (
-        <Text style={styles.empty}>No tasks yet. Add your first one above.</Text>
-      ) : (
-        <View style={styles.list}>
-          {ordered.map((task) => {
-            const subs = lamp.tasks.filter((item) => item.parentId === task.id);
-            const doneCount = subs.filter((item) => item.done).length;
-            // Overdue only changes the date's color. It never affects rewards.
-            const overdue = isOverdue(task.date, lamp.now);
-            // "Active" = the task the timer's sessions count toward.
-            const active = lamp.activeTask?.id === task.id && !task.done;
-            // Date, subtasks, focus, edit and delete. One group, so on a narrow
-            // phone it moves under the title as a whole instead of squeezing it.
-            const controls = (
-              <View style={styles.controls}>
-                {task.done ? null : (
-                  <DueControl
-                    value={task.date ?? ''}
-                    onChange={(next) => setTaskDate(task.id, next || null)}
-                    accent={accent}
-                    compact
-                    overdue={overdue}
-                    label={task.date ? `Change due date for ${task.text}` : `Add a due date to ${task.text}`}
-                  />
-                )}
-                {/* Subtask toggle: "+ Sub" when there are none, "2/3" when there are.
-                    Opening it also asks the new-subtask field to take focus. */}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded: task.open }}
-                  accessibilityLabel={subs.length > 0 ? `Subtasks for ${task.text}, ${doneCount} of ${subs.length} done` : `Add a subtask to ${task.text}`}
-                  onPress={() => {
-                    if (!task.open) setFocusSub(task.id);
-                    setTaskOpen(task.id, !task.open);
-                  }}
-                  hitSlop={iconSlop}
-                  style={[styles.subBtn, subs.length > 0 ? styles.subBtnOn : null]}
-                >
-                  <Text style={styles.subBtnText}>{subs.length > 0 ? `${doneCount}/${subs.length}` : '+ Sub'}</Text>
-                  {subs.length > 0 ? (
-                    <View style={task.open ? styles.chevOpen : null}>
-                      <ChevronIcon size={10} color={fade(colors.textPrimary, 0.45)} />
-                    </View>
-                  ) : null}
-                </Pressable>
-                {task.done ? null : (
-                  <FocusButton
-                    on={active}
-                    accent={accent}
-                    label={active ? `Stop focusing on ${task.text}` : `Focus on ${task.text}`}
-                    onPress={() => focusTask(task.id)}
-                  />
-                )}
-                {task.done ? null : (
-                  <IconButton label={`Edit ${task.text}`} onPress={() => beginEdit(task.id, task.text)}>
-                    <PencilIcon size={14} color={fade(colors.textPrimary, 0.45)} />
-                  </IconButton>
-                )}
-                <IconButton label={`Delete ${task.text}`} onPress={() => removeTask(task.id)}>
-                  <TrashIcon size={14} color={fade(colors.textPrimary, 0.45)} />
-                </IconButton>
-              </View>
-            );
-            return (
-              <View
-                key={task.id}
-                style={[
-                  styles.item,
-                  active ? { borderColor: fade(accent, 0.7), backgroundColor: fade(accent, 0.07) } : null,
-                ]}
-              >
-                {/* On a phone or tablet the title keeps a usable width: when the
-                    row is too narrow for it and the controls, they wrap under it. */}
-                <View style={[styles.row, mobile ? styles.rowWrap : null]}>
-                  <CheckBox
-                    on={task.done}
-                    accent={accent}
-                    label={task.done ? `Mark ${task.text} not done` : `Mark ${task.text} done`}
-                    onPress={() => toggleTask(task.id)}
-                  />
-                  {/* Title: a text field while editing, otherwise a button that
-                      focuses/unfocuses the task. */}
-                  {editingId === task.id ? (
-                    <TextInput
-                      defaultValue={task.text}
-                      autoFocus
-                      selectTextOnFocus
-                      maxLength={200}
-                      accessibilityLabel={`Edit ${task.text}`}
-                      onChangeText={(value) => { editValue.current = value; }}
-                      onSubmitEditing={() => commitEdit(task.id, editValue.current, true)}
-                      onBlur={() => commitEdit(task.id, editValue.current, true)}
-                      onKeyPress={(event) => {
-                        if (event.nativeEvent.key === 'Enter') commitEdit(task.id, editValue.current, true);
-                        if (event.nativeEvent.key === 'Escape') commitEdit(task.id, '', false);
-                      }}
-                      style={[styles.edit, mobile ? styles.titleRoom : null]}
-                    />
-                  ) : (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                      accessibilityLabel={active ? `Stop focusing on ${task.text}` : `Focus on ${task.text}`}
-                      disabled={task.done}
-                      onPress={() => focusTask(task.id)}
-                      style={[styles.titleBtn, mobile ? styles.titleRoom : null]}
-                    >
-                      {/* On a phone or tablet the title wraps (up to 3 lines). */}
-                      <Text style={[styles.title, task.done ? styles.done : null]} numberOfLines={mobile ? 3 : 1}>{task.text}</Text>
-                    </Pressable>
-                  )}
-                  {controls}
-                </View>
-                {/* Expanded subtasks, with their own add field. */}
-                {task.open ? (
-                  <View style={styles.subs}>
-                    {subs.map((sub) => (
-                      <View key={sub.id} style={styles.sub}>
-                        <CheckBox
-                          on={sub.done}
-                          accent={accent}
-                          small
-                          label={sub.done ? `Mark ${sub.text} not done` : `Mark ${sub.text} done`}
-                          onPress={() => toggleTask(sub.id)}
-                        />
-                        {editingId === sub.id ? (
-                          <TextInput
-                            defaultValue={sub.text}
-                            autoFocus
-                            selectTextOnFocus
-                            maxLength={200}
-                            accessibilityLabel={`Edit ${sub.text}`}
-                            onChangeText={(value) => { editValue.current = value; }}
-                            onSubmitEditing={() => commitEdit(sub.id, editValue.current, true)}
-                            onBlur={() => commitEdit(sub.id, editValue.current, true)}
-                            onKeyPress={(event) => {
-                              if (event.nativeEvent.key === 'Enter') commitEdit(sub.id, editValue.current, true);
-                              if (event.nativeEvent.key === 'Escape') commitEdit(sub.id, '', false);
-                            }}
-                            style={[styles.edit, styles.editSm]}
-                          />
-                        ) : (
-                          <Text style={[styles.subTitle, sub.done ? styles.done : null]} numberOfLines={1}>{sub.text}</Text>
-                        )}
-                        {sub.done ? null : (
-                          <IconButton label={`Edit ${sub.text}`} onPress={() => beginEdit(sub.id, sub.text)}>
-                            <PencilIcon size={14} color={fade(colors.textPrimary, 0.45)} />
-                          </IconButton>
-                        )}
-                        <IconButton label={`Delete ${sub.text}`} onPress={() => removeTask(sub.id)}>
-                          <TrashIcon size={14} color={fade(colors.textPrimary, 0.45)} />
-                        </IconButton>
-                      </View>
-                    ))}
-                    <View style={styles.subAdd}>
-                      <TextInput
-                        value={subDraft[task.id] ?? ''}
-                        onChangeText={(value) => setSubDraft((current) => ({ ...current, [task.id]: value }))}
-                        onSubmitEditing={() => addSub(task.id)}
-                        placeholder="Add a subtask"
-                        placeholderTextColor={fade(colors.textPrimary, 0.4)}
-                        accessibilityLabel={`Add a subtask to ${task.text}`}
-                        autoFocus={focusSub === task.id}
-                        maxLength={200}
-                        style={styles.subField}
-                      />
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Add subtask to ${task.text}`}
-                        onPress={() => addSub(task.id)}
-                        style={[styles.subAddBtn, { backgroundColor: fade(accent, 0.15) }]}
-                      >
-                        <Text style={[styles.subAddText, { color: accent }]}>Add</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                ) : null}
-              </View>
-            );
-          })}
-        </View>
       )}
-      {hasOpen ? (
-        <View style={styles.hintRow}>
-          <TargetIcon size={14} color={fade(colors.textPrimary, 0.4)} />
-          <Text style={styles.hint}>Click a task to focus on it. It shows under the timer.</Text>
+      {/* Subtask toggle: "+ Sub" when there are none, "2/3" when there are. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: task.open }}
+        accessibilityLabel={subs.length > 0 ? `Subtasks for ${task.text}, ${doneCount} of ${subs.length} done` : `Add a subtask to ${task.text}`}
+        onPress={() => actions.toggleOpen(task.id, !task.open)}
+        hitSlop={iconSlop}
+        style={[styles.subBtn, subs.length > 0 ? styles.subBtnOn : null]}
+      >
+        <Text style={styles.subBtnText}>{subs.length > 0 ? `${doneCount}/${subs.length}` : '+ Sub'}</Text>
+        {subs.length > 0 ? (
+          <View style={task.open ? styles.chevOpen : null}>
+            <ChevronIcon size={10} color={fade(colors.textPrimary, 0.45)} />
+          </View>
+        ) : null}
+      </Pressable>
+      {task.done ? null : (
+        <FocusButton
+          on={active}
+          accent={accent}
+          label={active ? `Stop focusing on ${task.text}` : `Focus on ${task.text}`}
+          onPress={() => actions.focus(task.id)}
+        />
+      )}
+      {task.done ? null : (
+        <IconButton label={`Edit ${task.text}`} onPress={() => actions.beginEdit(task.id, task.text)}>
+          <PencilIcon size={14} color={fade(colors.textPrimary, 0.45)} />
+        </IconButton>
+      )}
+      <IconButton label={`Delete ${task.text}`} onPress={() => actions.remove(task.id)}>
+        <TrashIcon size={14} color={fade(colors.textPrimary, 0.45)} />
+      </IconButton>
+    </View>
+  );
+
+  return (
+    <View
+      style={[
+        styles.item,
+        active ? { borderColor: fade(accent, 0.7), backgroundColor: fade(accent, 0.07) } : null,
+      ]}
+    >
+      {/* On a phone or tablet the title keeps a usable width: when the
+          row is too narrow for it and the controls, they wrap under it. */}
+      <View style={[styles.row, mobile ? styles.rowWrap : null]}>
+        <CheckBox
+          on={task.done}
+          accent={accent}
+          label={task.done ? `Mark ${task.text} not done` : `Mark ${task.text} done`}
+          onPress={() => actions.toggle(task.id)}
+        />
+        {/* Title: a text field while editing, otherwise a button that
+            focuses/unfocuses the task. */}
+        {editingId === task.id ? (
+          <EditField id={task.id} text={task.text} actions={actions} style={[styles.edit, mobile ? styles.titleRoom : null]} />
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={active ? `Stop focusing on ${task.text}` : `Focus on ${task.text}`}
+            disabled={task.done}
+            onPress={() => actions.focus(task.id)}
+            style={[styles.titleBtn, mobile ? styles.titleRoom : null]}
+          >
+            {/* On a phone or tablet the title wraps (up to 3 lines). */}
+            <Text style={[styles.title, task.done ? styles.done : null]} numberOfLines={mobile ? 3 : 1}>{task.text}</Text>
+          </Pressable>
+        )}
+        {controls}
+      </View>
+      {/* Expanded subtasks, with their own add field. */}
+      {task.open ? (
+        <View style={styles.subs}>
+          {subs.map((sub) => (
+            <View key={sub.id} style={styles.sub}>
+              <CheckBox
+                on={sub.done}
+                accent={accent}
+                small
+                label={sub.done ? `Mark ${sub.text} not done` : `Mark ${sub.text} done`}
+                onPress={() => actions.toggle(sub.id)}
+              />
+              {editingId === sub.id ? (
+                <EditField id={sub.id} text={sub.text} actions={actions} style={[styles.edit, styles.editSm]} />
+              ) : (
+                <Text style={[styles.subTitle, sub.done ? styles.done : null]} numberOfLines={1}>{sub.text}</Text>
+              )}
+              {sub.done ? null : (
+                <IconButton label={`Edit ${sub.text}`} onPress={() => actions.beginEdit(sub.id, sub.text)}>
+                  <PencilIcon size={14} color={fade(colors.textPrimary, 0.45)} />
+                </IconButton>
+              )}
+              <IconButton label={`Delete ${sub.text}`} onPress={() => actions.remove(sub.id)}>
+                <TrashIcon size={14} color={fade(colors.textPrimary, 0.45)} />
+              </IconButton>
+            </View>
+          ))}
+          <View style={styles.subAdd}>
+            <TextInput
+              value={subDraft}
+              onChangeText={setSubDraft}
+              onSubmitEditing={addSub}
+              placeholder="Add a subtask"
+              placeholderTextColor={fade(colors.textPrimary, 0.4)}
+              accessibilityLabel={`Add a subtask to ${task.text}`}
+              autoFocus={autoFocusSub}
+              maxLength={200}
+              style={styles.subField}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Add subtask to ${task.text}`}
+              onPress={addSub}
+              style={[styles.subAddBtn, { backgroundColor: fade(accent, 0.15) }]}
+            >
+              <Text style={[styles.subAddText, { color: accent }]}>Add</Text>
+            </Pressable>
+          </View>
         </View>
       ) : null}
     </View>
+  );
+}, sameRow);
+
+// The title field while a task or subtask is renamed. Enter or leaving the
+// field saves; Escape cancels.
+function EditField({ id, text, actions, style }: { id: number; text: string; actions: RowActions; style: StyleProp<TextStyle> }) {
+  return (
+    <TextInput
+      defaultValue={text}
+      autoFocus
+      selectTextOnFocus
+      maxLength={200}
+      accessibilityLabel={`Edit ${text}`}
+      onChangeText={actions.setEditValue}
+      onSubmitEditing={() => actions.commitEdit(id, actions.readEditValue(), true)}
+      onBlur={() => actions.commitEdit(id, actions.readEditValue(), true)}
+      onKeyPress={(event) => {
+        if (event.nativeEvent.key === 'Enter') actions.commitEdit(id, actions.readEditValue(), true);
+        if (event.nativeEvent.key === 'Escape') actions.commitEdit(id, '', false);
+      }}
+      style={style}
+    />
   );
 }
 
@@ -580,9 +738,17 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodySemibold,
     fontSize: 15,
   },
+  // A plain column of task rows. Only the landing page's sample rows use it now.
   list: {
     marginTop: 16,
     gap: 6,
+  },
+  // TaskScroller: the add row's space above the first task, and the gap between rows.
+  scrollerHead: {
+    marginBottom: 16,
+  },
+  rowGap: {
+    height: 6,
   },
   item: {
     borderWidth: 1,

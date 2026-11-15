@@ -55,3 +55,7 @@ app-example
 firestore-debug.log
 firebase-debug.log
 ui-debug.log
+
+# Claude Code personal settings (local permissions). The skills in .claude/skills stay tracked.
+.claude/settings.json
+.claude/settings.local.json

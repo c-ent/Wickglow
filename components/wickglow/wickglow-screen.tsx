@@ -18,6 +18,7 @@ import { DesktopWickglow } from '@/components/wickglow/screens/desktop';
 import { MobileWickglow } from '@/components/wickglow/screens/mobile';
 import { TabletWickglow } from '@/components/wickglow/screens/tablet';
 import { WickglowProvider } from '@/components/wickglow/logic';
+import { TourProvider } from '@/components/wickglow/features/tour/tour';
 import { PIXEL_ART } from '@/components/wickglow/features/background/pixel-art';
 import { removeRetiredScenes } from '@/components/wickglow/features/background/scene-downloads';
 import { VIDEOS } from '@/components/wickglow/features/background/video-art';
@@ -26,7 +27,8 @@ import { VIDEOS } from '@/components/wickglow/features/background/video-art';
  * The single screen of the app (rendered by app/index.tsx on Android and iOS,
  * app/app.tsx on the web). It loads the fonts, clears out retired scene
  * downloads, and picks which of the three layouts to show for the current
- * window size. Everything else lives in the layouts under `screens/`.
+ * window size. The first-run tour (`features/tour`) is drawn over whichever
+ * layout is showing. Everything else lives in the layouts under `screens/`.
  */
 
 // useSyncExternalStore needs a subscribe function; there is nothing to
@@ -69,7 +71,9 @@ export function WickglowScreen() {
 
   return (
     <WickglowProvider>
-      {layout === 'phone' ? <MobileWickglow /> : layout === 'tablet' ? <TabletWickglow /> : <DesktopWickglow />}
+      <TourProvider layout={layout}>
+        {layout === 'phone' ? <MobileWickglow /> : layout === 'tablet' ? <TabletWickglow /> : <DesktopWickglow />}
+      </TourProvider>
     </WickglowProvider>
   );
 }

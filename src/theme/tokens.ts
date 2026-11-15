@@ -12,6 +12,8 @@ export const colors = {
   // than bgCard so they hold up over bright video backgrounds.
   bgControl: 'rgba(255, 255, 255, 0.2)',
   bgInset: 'rgba(0, 0, 0, 0.28)',
+  // Dims the screen behind the phone sheet and around the tour's highlight.
+  scrim: 'rgba(5, 3, 10, 0.6)',
   // Phone glass: a faint frost over a dark tint, so the scene shows through
   // without the controls reading as white. Native has no blur, so its bars
   // and sheet use the stronger `glassTintSolid`.

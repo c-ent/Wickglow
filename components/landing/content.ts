@@ -4,10 +4,10 @@ import type { ImageSourcePropType } from 'react-native';
 // so a link or a sentence changes in one place.
 
 /**
- * The Android APK download. Placeholder until the owner sends the Google Drive
- * share link (set to "Anyone with the link"). Replace this one line.
+ * The Android APK download: the owner's Google Drive share link ("Anyone with
+ * the link"). It opens Drive's file page, which has the download button.
  */
-export const APK_URL = 'https://drive.google.com/';
+export const APK_URL = 'https://drive.google.com/file/d/1oqYC0LGM1YPDbo9Nj5_umuV1FV6UoXAN/view?usp=sharing';
 
 export const APP_VERSION = '1.0.0';
 
@@ -45,12 +45,12 @@ export const GALLERY: readonly GallerySlide[] = [
     ratio: 1600 / 759,
   },
   {
-    id: 'moonlit',
-    label: 'Moonlit',
-    caption: 'A big, quiet timer over a moonlit night with falling rain.',
+    id: 'tasks',
+    label: 'Tasks',
+    caption: 'Break study into tasks and subtasks, then pick one to focus on under the timer.',
     source: require('@/assets/landing/desktop-3.webp') as ImageSourcePropType,
-    alt: 'Wickglow on desktop: a 25:00 focus timer over a dark blue Moonlit scene with falling rain',
-    ratio: 1600 / 759,
+    alt: 'Wickglow on desktop with the Tasks panel open: a task split into four subtasks above a finished one',
+    ratio: 1600 / 760,
   },
   {
     id: 'music',
@@ -65,8 +65,8 @@ export const GALLERY: readonly GallerySlide[] = [
 /** The phone screenshot, shown beside the Android download. */
 export const PHONE_SHOT = {
   source: require('@/assets/landing/mobile.webp') as ImageSourcePropType,
-  alt: 'Wickglow on a phone: a candle, the 25:00 timer, and the Light the candle button',
-  ratio: 378 / 821,
+  alt: 'Wickglow on a phone: a lit candle above a 24:59 focus timer, with the Pause button',
+  ratio: 374 / 816,
 };
 
 /** The slim bar under the hero: four short promises, each with a small icon. */

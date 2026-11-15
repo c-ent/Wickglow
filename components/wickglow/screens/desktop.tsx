@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sessionFace } from '@/src/core/session-face';
+import type { TourTarget } from '@/src/core/tour';
 import { colors, fonts, radius, rounded } from '@/src/theme/tokens';
 import { darkGlass, glassPanel } from '@/components/wickglow/shared/panel-styles';
 import { useFullscreen } from '@/components/wickglow/hooks/use-fullscreen';
@@ -32,7 +33,7 @@ import { MarqueeText } from '@/components/wickglow/shared/marquee-text';
 import { AmbientIcon } from '@/components/wickglow/shared/ambient-icon';
 import { ambientOn } from '@/src/core/ambient';
 import { TimerSettings } from '@/components/wickglow/features/settings/timer-settings';
-import { TaskList } from '@/components/wickglow/features/tasks/task-list';
+import { TaskScroller } from '@/components/wickglow/features/tasks/task-list';
 import { FocusLine } from '@/components/wickglow/features/tasks/focus-line';
 import { MixerBlock } from '@/components/wickglow/features/audio/mixer-block';
 import { MusicBlock } from '@/components/wickglow/features/audio/music-block';
@@ -40,6 +41,7 @@ import { StreamStage } from '@/components/wickglow/features/audio/stream-stage';
 import { SessionEndCard } from '@/components/wickglow/features/timer/session-end-card';
 import { TimeText } from '@/components/wickglow/features/timer/time-text';
 import { LogoMark } from '@/components/wickglow/shared/logo';
+import { useTour, useTourTarget } from '@/components/wickglow/features/tour/tour';
 import { PanelHeading } from '@/components/wickglow/shared/panel-heading';
 import {
   ClockIcon,
@@ -102,9 +104,22 @@ export function DesktopWickglow() {
   // instead of above the dock, so the field being typed in stays visible.
   const keyboard = useKeyboardInset();
   const [panel, setPanel] = useState<PanelId | null>(null);
+  // The first-run tour points at the dock and the timer, so it closes any open
+  // panel when it starts, and the controls stay up (no zen) while it runs.
+  const tour = useTour();
+  const timerTarget = useTourTarget('timer');
+  const musicTarget = useTourTarget('music');
+  const progressTarget = useTourTarget('progress');
+  // Closed during render when the tour starts (React's "adjust state when a
+  // value changes" pattern), so the panel never shows under its first step.
+  const [tourWas, setTourWas] = useState(tour.active);
+  if (tourWas !== tour.active) {
+    setTourWas(tour.active);
+    if (tour.active) setPanel(null);
+  }
   // Zen: while focusing with no panel open, the whole UI fades out after 3.5s
   // without input.
-  const { zen, poke } = useZen(lamp.running && lamp.mode === 'focus' && lamp.zenOpt && !panel, 3500);
+  const { zen, poke } = useZen(lamp.running && lamp.mode === 'focus' && lamp.zenOpt && !panel && !tour.active, 3500);
   // The empty "slot" box inside the Music card, and its measured position on
   // screen. The stream player floats over the scene (so it survives the card
   // closing) and is moved to sit exactly on top of this slot.
@@ -174,6 +189,10 @@ export function DesktopWickglow() {
   // just above the keyboard while it is open.
   const wideBottom = keyboard > 0 ? keyboard + 12 : insets.bottom + 84;
   const sideBottom = keyboard > 0 ? keyboard + 12 : insets.bottom + 72;
+  // Tasks card height: a set height, up to 720 or the room above the dock (or
+  // the keyboard), so its list draws only the rows on screen. A card sized by
+  // its content would draw every task and subtask when it opens.
+  const tasksHeight = Math.min(720, Math.max(0, height - insets.top - 20 - wideBottom));
   // With the keyboard up, a side card must also not run off the top.
   const sideMaxHeight = keyboard > 0 ? Math.max(0, height - sideBottom - insets.top - 20) : undefined;
 
@@ -194,7 +213,7 @@ export function DesktopWickglow() {
           </View>
           <Text style={styles.brandText}>Wickglow</Text>
         </Pressable>
-        <View style={styles.pills}>
+        <View ref={progressTarget} collapsable={false} style={styles.pills}>
           <Pressable accessibilityRole="button" accessibilityLabel={`Streak ${lamp.streak} days. Open progress`} style={styles.pill} onPress={() => togglePanel('progress')}>
             <FlameIcon size={15} color={colors.error} />
             <Text style={styles.pillText}>{lamp.streak}</Text>
@@ -238,7 +257,7 @@ export function DesktopWickglow() {
           ))}
         </View>
         {/* Zen hides Reset and Skip; the main button stays, as on phone and tablet. */}
-        <View style={styles.controls}>
+        <View ref={timerTarget} collapsable={false} style={styles.controls}>
           <Pressable accessibilityRole="button" accessibilityLabel="Reset timer" style={[styles.round, { opacity: zen ? 0 : 1 }]} pointerEvents={zen ? 'none' : 'auto'} onPress={reset}><ResetIcon /></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={face.startLabel} style={styles.start} onPress={toggle}><Text style={styles.startText}>{face.startLabel}</Text></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel="Skip timer" style={[styles.round, { opacity: zen ? 0 : 1 }]} pointerEvents={zen ? 'none' : 'auto'} onPress={skip}><SkipIcon /></Pressable>
@@ -249,20 +268,22 @@ export function DesktopWickglow() {
           screen. Full screen only appears where the browser supports it. */}
       <View style={[styles.dock, { paddingBottom: insets.bottom + 14, opacity: zen ? 0 : 1 }]} pointerEvents={zen ? 'none' : 'auto'}>
         <View style={styles.dockGroup}>
-          <MusicDockButton
-            active={panel === 'music'}
-            onOpen={() => togglePanel('music')}
-            onPause={() => { poke(); toggleMusic(); }}
-          />
+          <View ref={musicTarget} collapsable={false}>
+            <MusicDockButton
+              active={panel === 'music'}
+              onOpen={() => togglePanel('music')}
+              onPause={() => { poke(); toggleMusic(); }}
+            />
+          </View>
           {/* While any ambient sound is turned up (it plays whenever a slider is
               above zero, timer or not), the mixer's knobs drift slowly in the
               accent: quieter than the Music oval, and no dot, which already
               means other things on the dock. */}
-          <DockButton label={ambientLive ? 'Ambient mixer, sounds on' : 'Ambient mixer'} active={panel === 'mixer'} onPress={() => togglePanel('mixer')}>
+          <DockButton tour="ambient" label={ambientLive ? 'Ambient mixer, sounds on' : 'Ambient mixer'} active={panel === 'mixer'} onPress={() => togglePanel('mixer')}>
             {ambientLive ? <AmbientIcon accent={panel === 'mixer' ? colors.textInverse : theme.accent} paused={zen} /> : <MixerIcon />}
           </DockButton>
-          <DockButton label="Scenes" active={panel === 'scenes'} onPress={() => togglePanel('scenes')}><SceneIcon /></DockButton>
-          <DockButton label="Tasks" active={panel === 'tasks'} onPress={() => togglePanel('tasks')}><TaskIcon /></DockButton>
+          <DockButton tour="scenes" label="Scenes" active={panel === 'scenes'} onPress={() => togglePanel('scenes')}><SceneIcon /></DockButton>
+          <DockButton tour="tasks" label="Tasks" active={panel === 'tasks'} onPress={() => togglePanel('tasks')}><TaskIcon /></DockButton>
           <DockButton label="Quests" active={panel === 'quests'} dot={questOpen} onPress={() => togglePanel('quests')}><StarIcon /></DockButton>
         </View>
         <View style={styles.dockGroup}>
@@ -312,12 +333,24 @@ export function DesktopWickglow() {
           pointerEvents="box-none"
           style={[styles.wideWrap, styles.progressWrap, { top: insets.top + 20, bottom: wideBottom }]}
         >
-          <ScrollView keyboardShouldPersistTaps="handled" style={[styles.progressScroll, panel === 'quests' && styles.questsScroll, panel === 'tasks' && styles.tasksScroll]}>
-            <View style={styles.progressCard}>
+          {/* The card keeps its heading and rounded corners in place; only the
+              content scrolls, in a box inset from the card's edges, so the
+              scrollbar sits inside the card like the Music card's track list. */}
+          <View style={[styles.progressScroll, styles.cardShell, panel === 'quests' && styles.questsScroll, panel === 'tasks' && [styles.tasksScroll, { height: tasksHeight }]]}>
+            <View style={styles.cardHead}>
               <PanelHeading title={PANEL_TITLE[panel]} onClose={() => setPanel(null)} actions={panel === 'progress' ? <AccountChip /> : undefined} />
-              {panel === 'progress' ? <ProgressBoard /> : panel === 'quests' ? <QuestsBoard /> : <TaskList />}
             </View>
-          </ScrollView>
+            {panel === 'tasks' ? (
+              // Its own virtualised scroller, filling the card under the heading.
+              <View style={styles.tasksBody}>
+                <TaskScroller mobile={false} contentContainerStyle={styles.cardBodyContent} />
+              </View>
+            ) : (
+              <ScrollView keyboardShouldPersistTaps="handled" style={styles.cardBody} contentContainerStyle={styles.cardBodyContent}>
+                {panel === 'progress' ? <ProgressBoard /> : <QuestsBoard />}
+              </ScrollView>
+            )}
+          </View>
         </View>
       ) : null}
 
@@ -454,10 +487,12 @@ function MusicDockButton({ active, onOpen, onPause }: { active: boolean; onOpen:
 
 // A round dock icon. Like the phone's DockItem, it recolors its icon child with
 // cloneElement (dark when active, light otherwise) and can show an accent dot.
-function DockButton({ children, active, dot, onPress, label }: { children: React.ReactNode; active: boolean; dot?: boolean; onPress: () => void; label: string }) {
+// `tour` marks it as the part a tour step points at.
+function DockButton({ children, active, dot, onPress, label, tour }: { children: React.ReactNode; active: boolean; dot?: boolean; onPress: () => void; label: string; tour?: TourTarget }) {
   const { sceneTheme } = useWickglow();
+  const target = useTourTarget(...(tour ? [tour] : []));
   return (
-    <Pressable accessibilityLabel={label} onPress={onPress} style={[styles.ib, active && styles.ibOn]}>
+    <Pressable ref={target} collapsable={false} accessibilityLabel={label} onPress={onPress} style={[styles.ib, active && styles.ibOn]}>
       {React.isValidElement(children)
         ? React.cloneElement(children as React.ReactElement<{ color?: string }>, { color: active ? colors.textInverse : colors.textPrimary })
         : children}
@@ -741,9 +776,9 @@ const styles = StyleSheet.create({
   progressWrap: {
     justifyContent: 'center',
   },
-  // Caps at the space above the dock and scrolls only when the content is taller.
-  // A ScrollView for Progress, Quests and Tasks; the Music card reuses the box
-  // as a plain View with `musicScroll`, which clips instead of scrolling.
+  // Caps at the space above the dock. Progress, Quests and Tasks add
+  // `cardShell` and scroll their body inside it; the Music card adds
+  // `musicScroll`, which clips instead of scrolling.
   progressScroll: {
     width: '100%',
     maxWidth: 900,
@@ -756,9 +791,44 @@ const styles = StyleSheet.create({
   questsScroll: {
     maxWidth: 450,
   },
-  // One column, the width of the task list.
+  // Up to 750 (owner, 2026-11-15).
   tasksScroll: {
-    maxWidth: 470,
+    maxWidth: 750,
+  },
+  // Progress, Quests and Tasks: the card itself, capped at the space above the
+  // dock. It clips, so its rounded corners hold while the body scrolls.
+  cardShell: {
+    ...glassPanel,
+    ...rounded(radius.sheet),
+    overflow: 'hidden',
+    paddingTop: 18,
+    paddingBottom: 12,
+  },
+  cardHead: {
+    paddingHorizontal: 22,
+  },
+  // The scroll box sits 8 in from the card's sides, so the scrollbar runs
+  // inside the card rather than on its rounded edge.
+  cardBody: {
+    flexGrow: 0,
+    flexShrink: 1,
+    minHeight: 0,
+    marginHorizontal: 8,
+  },
+  // The Tasks card's body takes all the room under the heading, with the same
+  // 8 side inset as `cardBody`. Its own style, not `cardBody` plus `flex: 1`:
+  // an explicit `flexGrow: 0` there would win over the shorthand and leave the
+  // list 0 tall, so it would draw nothing.
+  tasksBody: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minHeight: 0,
+    marginHorizontal: 8,
+  },
+  cardBodyContent: {
+    paddingHorizontal: 14,
+    paddingBottom: 6,
   },
   progressCard: {
     width: '100%',

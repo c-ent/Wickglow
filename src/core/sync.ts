@@ -25,7 +25,8 @@ import { Task } from './types';
 //   A tombstone can gain that day once and never lose it.
 // - Only what matters across devices is synced: a task's open subtask list
 //   and its session count are left out (the count comes from the session
-//   records, see `withSessionCounts`).
+//   records, see `withSessionCounts`). A subtask new from the account opens
+//   its parent's list on this device, as adding one here does.
 // `SyncMeta` is what the device last saw in the account. The caller passes
 // only copies the server has confirmed, so a write that never reached the
 // server is never counted as seen.
@@ -370,9 +371,13 @@ export function reconcile(
     if (next) ordered.push(next);
   }
   added.sort(byNewest);
+  // A subtask new from the account opens its parent's subtask list, as adding
+  // one on this device does, so subtasks made elsewhere show without a tap.
+  const openParents = new Set(added.filter((task) => task.parentId != null).map((task) => task.parentId));
+  const opened = (task: Task) => (openParents.has(task.id) && !task.open ? { ...task, open: true } : task);
   const tasks = normaliseTasks([
-    ...added.filter((task) => task.parentId == null),
-    ...ordered,
+    ...added.filter((task) => task.parentId == null).map(opened),
+    ...ordered.map(opened),
     ...added.filter((task) => task.parentId != null),
   ]);
 

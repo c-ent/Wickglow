@@ -8,6 +8,7 @@ import { PRESETS, TimerCfg } from '@/components/wickglow/theme';
 import { useTone } from '@/components/wickglow/features/tone';
 import { LANDING_HOME_PATH } from '@/components/landing/returning-visitor';
 import { LogoMark } from '@/components/wickglow/shared/logo';
+import { useTour } from '@/components/wickglow/features/tour/tour';
 
 /**
  * The Timer settings panel: length presets and custom lengths, auto-start,
@@ -64,8 +65,22 @@ export function TimerSettings({ mobile = false }: { mobile?: boolean }) {
         <Text style={styles.note}>Lower drops the music to half until the next session starts. The chime still plays.</Text>
       </View>
       {mobile ? null : longBreakNote}
-      <AboutLink />
+      {/* The last line: About Wickglow on the left (web only), Show tour again on the right. */}
+      <View style={aboutStyles.row}>
+        <AboutLink />
+        <ReplayTourLink />
+      </View>
     </View>
+  );
+}
+
+// A quiet line that starts the first-run tour again, on every platform.
+function ReplayTourLink() {
+  const { start } = useTour();
+  return (
+    <Pressable accessibilityRole="button" onPress={start} hitSlop={8}>
+      <Text style={[styles.note, aboutStyles.text]}>Show tour again</Text>
+    </Pressable>
   );
 }
 
@@ -90,12 +105,18 @@ function AboutLink() {
 }
 
 const aboutStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 20,
+  },
   link: {
-    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 20,
   },
   text: {
     marginTop: 0,

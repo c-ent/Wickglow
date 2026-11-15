@@ -6,7 +6,8 @@ import { panelStyles as styles } from '@/components/wickglow/shared/panel-styles
 /**
  * The pill switch at the top of a phone or tablet page that shows one view at
  * a time: Tracks / Ambient on Sounds, Stats / Calendar on Stats. `first` drops
- * the top margin when nothing sits above it.
+ * the top margin when nothing sits above it. `refs` attaches a ref to an
+ * option's button (the phone tour points at Ambient).
  */
 export function SegmentTabs<T extends string>({
   value,
@@ -15,6 +16,7 @@ export function SegmentTabs<T extends string>({
   onChange,
   mobile = false,
   first = false,
+  refs,
 }: {
   value: T;
   options: readonly T[];
@@ -22,6 +24,7 @@ export function SegmentTabs<T extends string>({
   onChange: (next: T) => void;
   mobile?: boolean;
   first?: boolean;
+  refs?: Partial<Record<T, React.Ref<React.ComponentRef<typeof View>>>>;
 }) {
   const tone = useTone(mobile);
   const selectedStyle = { backgroundColor: tone.solid, borderColor: tone.solid };
@@ -31,6 +34,8 @@ export function SegmentTabs<T extends string>({
       {options.map((item) => (
         <Pressable
           key={item}
+          ref={refs?.[item]}
+          collapsable={false}
           accessibilityRole="tab"
           accessibilityState={{ selected: value === item }}
           accessibilityLabel={labels[item]}

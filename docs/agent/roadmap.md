@@ -30,9 +30,10 @@ The order was updated on 2026-11-03 and is recorded in `progress.md`. #1, #4 and
 | 5   | Accounts and sync                       | v2      | Shipped 2026-11-15 (owner checked two devices) | —                                                         |
 | 10  | Private circles (friends' candles)      | —       | Out (owner, 2026-11-10)     | —                                                         |
 | 11  | Focus rooms                             | —       | Out (owner, 2026-11-10)     | —                                                         |
-| 12  | Landing page                            | v2      | Current (owner, 2026-11-15) | Web build, APK on Google Drive, C1 cleared                |
+| 12  | Landing page                            | v2      | Done (owner, 2026-11-15) | Web build, APK on Google Drive, C1 cleared                |
+| 13  | First-run tour                          | v2      | Shipped 2026-11-15 (owner checked Android and desktop) | —                                                         |
 
-#1, #4 and #8 have shipped. #2 and #3 were removed. #6 and #7 are out. #9, #10 and #11 were dropped by the owner on 2026-11-10; their sections below are history only. #5 was dropped on 2026-11-10 and brought back on 2026-11-13 as the current feature.
+#1, #4, #5, #8, #12 and #13 have shipped (#5, #12 and #13 in November 2026). #2 and #3 were removed. #6 and #7 are out. #9, #10 and #11 were dropped by the owner on 2026-11-10; their sections below are history only. No item is current; the owner picks the next one.
 
 ## v2
 
@@ -108,7 +109,7 @@ Shipped: paste a public link. The save stores the link and the service name. The
 
 Open questions: whether links can be shared in rooms. The privacy-policy line Spotify's widget terms ask for, before release.
 
-### 12. Landing page — current (added by the owner 2026-11-15)
+### 12. Landing page — done (added and closed by the owner 2026-11-15)
 
 Source: the owner, for the portfolio link and ahead of the Play listing.
 
@@ -116,13 +117,41 @@ Decided 2026-11-15:
 
 - On the web, `/` is the landing page (`app/index.web.tsx`, UI in `components/landing/`) and the web app is at `/app` (`app/app.tsx`). On Android and iOS, `/` stays the app (`app/index.tsx`). A visitor who has used the web app before is sent from `/` to `/app` by a script in the page head (`components/landing/returning-visitor.ts`); `/?home` shows the landing page anyway; the web app links there from an "About Wickglow" line at the end of Timer settings, opened in a new tab so a running session keeps going (owner, 2026-11-15). `/download`, the first address, redirects to `/` (owner, 2026-11-15). The web build uses `"output": "static"`, so each route is pre-rendered to a static HTML page and reuses the theme tokens and fonts.
 - `/` is the page to link to (portfolio, posts, the Play listing's website field). The first plan kept the app at `/` with no redirect; the owner moved the landing page to `/` the same day so search results show it.
-- The main button downloads the Android APK, hosted on the owner's Google Drive at first. Until the owner sends the link, `APK_URL` in `components/landing/content.ts` is a placeholder.
+- The main button downloads the Android APK, hosted on the owner's Google Drive at first. `APK_URL` in `components/landing/content.ts` is the owner's Drive share link (set 2026-11-15).
 - It goes live before the Google Play badge exists. When the Play listing is live, the badge is added and the APK button can be dropped or kept.
 - Screenshots: three desktop shots in one swipeable gallery ("See it in action") inside a browser-style window (three dots and an address pill showing `GALLERY_ADDRESS`, arrows, scene tabs with a one-line caption per slide, a warm glow beneath), the same 1040 column as the other sections (it was 1200 wide at first; the owner asked on 2026-11-15 for it to line up), the screen area the same shape as the screenshots, Moonlit first (`GALLERY` in `content.ts`). The phone shot sits beside the Android download in the download card (`PHONE_SHOT`). WebP files are in `assets/landing/`.
 
 Design: the owner's mockup (2026-11-15). A near-black violet page with Amber glows and the flame colour as the only accent. Nav (Features, Android, Open the app); hero "Get the work done." with four floating sample widgets (timer, level, streak, ambient mix; sample numbers, drawn only on windows 1180 wide or more); a slim promise bar (Free, no ads or tracking, no account needed, no harsh alarm); a screenshot section; a "What's inside" bento grid whose pictures are the app's own components fed sample values (`components/landing/app-pieces.tsx`: `Candle`, `LevelCardView`, the task row pieces, the mixer styles, `DayCell`; the app exports `CheckBox`, `FocusButton`, `taskListStyles`, `DayCell` and `LevelCardView` for this); a download card; footer links to `/privacy`, `/delete-account` and the GitHub repo. Page-only colours are in `components/landing/palette.ts`; the rest come from the tokens.
 
-C1 in `docs/issues.md` (the unconfirmed videos) was fixed on 2026-11-15, so it no longer blocks a public launch. What is left is the APK link.
+C1 in `docs/issues.md` (the unconfirmed videos) was fixed on 2026-11-15, so it no longer blocks a public launch. The APK link is in (2026-11-15).
+
+### 13. First-run tour — shipped 2026-11-15
+
+Source: the owner. New users should be shown where the main parts of the app are.
+
+Behavior:
+
+- A short tour of tooltips, each placed next to the part it describes, with a soft highlight around that part. The rest of the screen dims softly with a warm glow. No bouncing arrows, no confetti.
+- The same steps and words on phone, tablet and desktop. Only the target changes per layout: on desktop the dock buttons and panels, on phone the bottom tabs, on tablet the side column.
+- Steps:
+  1. Welcome to Wickglow: one line on what the app is (focus sessions, calm music, XP for showing up).
+  2. Timer: "Start a focus session here. Pause or skip any time."
+  3. Music: "Pick a lofi track or play your own files." On desktop, it also says "Paste a streaming link to play it here."
+  4. Ambient sounds: "Mix in rain, cafe and other sounds behind your music." On desktop it points at the Ambient mixer dock button. On phone it points at the Sounds tab, where Ambient sits beside Tracks.
+  5. Scenes (desktop) or Mood (phone and tablet): "Change the view behind your timer." / "Change the look behind your timer."
+  6. Tasks: "Add what you are working on, then pick one to focus on."
+  7. Progress (desktop, the streak, minutes and level pills) or Stats (phone tab, tablet section): "Finish sessions to earn XP and keep your streak."
+
+  Progress and tasks were one step in the first plan; they are two because they sit in different places on every layout.
+- Shown once, with Back and Skip on every step and Escape on the web. The last step says it can be replayed from Timer settings, where a "Show tour again" line sits just above "About Wickglow" (on every platform).
+
+Decided 2026-11-15 (owner):
+
+- Anyone who has not seen it on this device sees it, new or existing users.
+- "Seen" is stored on the device only (`wickglow:tour` in AsyncStorage), never synced. Finishing or skipping stores it. If storage cannot be read, the tour does not start.
+- On phone, the Music and Ambient steps both point at the Sounds tab; the tour does not open it.
+
+Built 2026-11-15: steps and words in `src/core/tour.ts`; the provider, overlay and placement in `components/wickglow/features/tour/`. Each layout marks its parts with `useTourTarget`, closes its panel or sheet and holds off zen while the tour runs. The tablet scrolls whichever column holds the part to the top and puts the card to its left.
 
 ## v3 (dropped)
 
