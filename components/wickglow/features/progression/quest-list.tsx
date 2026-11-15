@@ -26,8 +26,7 @@ export function QuestList({ mobile = false, wide: desk = false, title = 'Daily q
     // The reward stays claimed after a task is undone, so the paid state comes
     // from the stored claim, not from a counter that can fall back below goal.
     const done = day.claimed.includes(quest.id);
-    // Bar fill as a percent string. `as const` narrows it to a template-literal
-    // type, which React Native's `width` style requires.
+    // Bar fill as a percent string (`as const` for the `width` style type).
     const width = `${Math.round((value / quest.goal) * 100)}%` as const;
     return { quest, value, done, width };
   });

@@ -13,7 +13,6 @@ import {
   AndroidNotificationVisibility,
   SchedulableTriggerInputTypes,
   cancelScheduledNotificationAsync,
-  deleteNotificationChannelAsync,
   getPermissionsAsync,
   requestPermissionsAsync,
   scheduleNotificationAsync,
@@ -23,21 +22,15 @@ import {
 import { Platform } from 'react-native';
 
 const CHANNEL_ID = 'session-end-alarm';
-const PREVIOUS_CHANNEL_IDS = ['session-end', 'session-end-chime'];
 export const SESSION_NOTIFICATION_ID = 'wickglow-session-end';
-// The id used before the rename. An install updated mid-session can still hold
-// an alarm under it, so every cancel clears it too.
-const LEGACY_NOTIFICATION_ID = 'lumifi-session-end';
 const SOUND = 'chime.mp3';
 
-/** Cancels the current alarm and any left over under the pre-rename id. */
-async function cancelBoth(message: string): Promise<void> {
-  for (const id of [SESSION_NOTIFICATION_ID, LEGACY_NOTIFICATION_ID]) {
-    try {
-      await cancelScheduledNotificationAsync(id);
-    } catch (error) {
-      reportNotificationError(message, error, true);
-    }
+/** Cancels the session-end alarm, if one is scheduled. */
+async function cancelAlarm(message: string): Promise<void> {
+  try {
+    await cancelScheduledNotificationAsync(SESSION_NOTIFICATION_ID);
+  } catch (error) {
+    reportNotificationError(message, error, true);
   }
 }
 
@@ -68,26 +61,19 @@ function enqueueMutation(operation: () => Promise<void>): Promise<void> {
   return next;
 }
 
-// True once the channel has been set up in this run of the app. The set-up is
-// three native calls, and repeating them on every Start only delayed the alarm.
+// True once the channel has been set up in this run of the app, so a Start
+// does not wait on the native call again.
 let channelReady = false;
 
 /**
- * Sets up the session-end channel, once per run of the app. Android freezes
- * the sound of a channel the first time it is created. Two older channels
- * shipped silent, so they are deleted and replaced by one that plays the chime
+ * Sets up the session-end channel, once per run of the app. It plays the chime
  * on the alarm stream, which stays audible while music and ambient hold audio
- * focus. A failure leaves `channelReady` false, so the next Start tries again.
+ * focus. Android freezes a channel's sound the first time it is created, so a
+ * different sound needs a new channel id. A failure leaves `channelReady`
+ * false, so the next Start tries again.
  */
 async function ensureChannel(): Promise<void> {
   if (channelReady) return;
-  for (const id of PREVIOUS_CHANNEL_IDS) {
-    try {
-      await deleteNotificationChannelAsync(id);
-    } catch (error) {
-      reportNotificationError(`Could not remove notification channel ${id}.`, error, true);
-    }
-  }
   await setNotificationChannelAsync(CHANNEL_ID, {
     name: 'Session end',
     importance: AndroidImportance.HIGH,
@@ -136,7 +122,7 @@ export async function prepareNotificationPermission(alreadyAsked: boolean): Prom
 export function scheduleSessionEnd(endAt: number, mode: TimerMode): Promise<void> {
   if (Platform.OS === 'web') return Promise.resolve();
   return enqueueMutation(async () => {
-    await cancelBoth('Could not cancel the previous session-end notification.');
+    await cancelAlarm('Could not cancel the previous session-end notification.');
     try {
       await scheduleNotificationAsync({
         identifier: SESSION_NOTIFICATION_ID,
@@ -161,14 +147,13 @@ export function scheduleSessionEnd(endAt: number, mode: TimerMode): Promise<void
 /** Drops the pending alarm, for a pause, reset, skip or mode change. */
 export function cancelSessionEnd(): Promise<void> {
   if (Platform.OS === 'web') return Promise.resolve();
-  return enqueueMutation(() => cancelBoth('Could not cancel the session-end notification.'));
+  return enqueueMutation(() => cancelAlarm('Could not cancel the session-end notification.'));
 }
 
 /**
- * Cancelling an alarm that was never scheduled, or deleting a channel that is
- * already gone, throws a "not found" error on the platform and is not a
- * problem. `expectedMissing` swallows those so a real failure is not buried
- * under the noise of the routine ones.
+ * Cancelling an alarm that was never scheduled throws a "not found" error on
+ * the platform, which is not a problem. `expectedMissing` swallows those so a
+ * real failure is not buried under the noise of the routine ones.
  */
 function reportNotificationError(message: string, error: unknown, expectedMissing = false) {
   if (expectedMissing && isMissingNotificationError(error)) return;

@@ -43,7 +43,7 @@ export function StreamPlayer({
   const [active, setActive] = useState(AppState.currentState === 'active');
   const name = streamServiceName(service);
   // Some services stay mounted while the tab is hidden so playback continues;
-  // the rest are removed when the page is hidden (matches the native behavior).
+  // the rest are removed when the page is hidden (see `keepsWebPlaybackWhenHidden`).
   const shown = keepsWebPlaybackWhenHidden(service) || active;
 
   useEffect(() => {

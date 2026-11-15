@@ -10,7 +10,7 @@ import { SignInCard } from './sign-in-card';
 import { useAccount } from './account';
 
 /**
- * Account control for a card header (owner, 2026-11-13). Signed out: a "Sign in"
+ * Account control for a card header. Signed out: a "Sign in"
  * pill that opens the sign-in card. Signed in: the avatar, first name and a
  * chevron that open a dropdown with the account details, rename, sign out and
  * delete. Hidden when the build has no Firebase config.

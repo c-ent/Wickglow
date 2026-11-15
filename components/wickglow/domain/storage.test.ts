@@ -1,9 +1,9 @@
 // The read-failure cases are the point of this file. `storage.ts` returns fresh
 // defaults when a read throws, and that fallback must not be written back over
-// progress that is still in storage, so the last three cases check that a later
-// save either keeps the old value or is skipped.
+// progress that is still in storage, so the last two cases check that a later
+// save is skipped until a read succeeds.
 
-import { LEGACY_STORAGE_KEY, STORAGE_KEY } from './saved-state';
+import { STORAGE_KEY } from './saved-state';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -47,33 +47,6 @@ describe('loading saved state', () => {
     expect(state.streak.n).toBe(3);
   });
 
-  it('moves a legacy save across and keeps the progress', async () => {
-    await AsyncStorage.setItem(LEGACY_STORAGE_KEY, progress);
-    const state = await loadWickglowState();
-    expect(state.xp).toBe(40);
-    expect(await AsyncStorage.getItem(STORAGE_KEY)).toBe(progress);
-    expect(await AsyncStorage.getItem(LEGACY_STORAGE_KEY)).toBeNull();
-  });
-
-  it('keeps readable progress when the legacy cleanup fails', async () => {
-    await AsyncStorage.setItem(LEGACY_STORAGE_KEY, progress);
-    jest.spyOn(AsyncStorage, 'removeItem').mockRejectedValueOnce(new Error('storage unavailable'));
-
-    const state = await loadWickglowState();
-
-    expect(state.xp).toBe(40);
-    expect(state.streak.n).toBe(3);
-  });
-
-  it('keeps readable progress when the migration write fails', async () => {
-    await AsyncStorage.setItem(LEGACY_STORAGE_KEY, progress);
-    jest.spyOn(AsyncStorage, 'setItem').mockRejectedValueOnce(new Error('storage unavailable'));
-
-    const state = await loadWickglowState();
-
-    expect(state.xp).toBe(40);
-  });
-
   it('starts fresh when the read itself fails', async () => {
     jest.spyOn(AsyncStorage, 'getItem').mockRejectedValueOnce(new Error('storage unavailable'));
     const state = await loadWickglowState();
@@ -89,20 +62,6 @@ describe('loading saved state', () => {
     await saveWickglowState({ ...state, xp: 5 });
 
     expect(JSON.parse((await AsyncStorage.getItem(STORAGE_KEY)) as string).xp).toBe(40);
-  });
-
-  it('does not write defaults over the legacy save when the read fails', async () => {
-    await AsyncStorage.setItem(LEGACY_STORAGE_KEY, progress);
-    // The current key reads as empty, then the legacy read is the one that fails.
-    jest.spyOn(AsyncStorage, 'getItem')
-      .mockResolvedValueOnce(null)
-      .mockRejectedValueOnce(new Error('storage unavailable'));
-
-    const state = await loadWickglowState();
-    await saveWickglowState({ ...state, xp: 5 });
-
-    expect(await AsyncStorage.getItem(STORAGE_KEY)).toBeNull();
-    expect(await AsyncStorage.getItem(LEGACY_STORAGE_KEY)).toBe(progress);
   });
 
   it('saves again once a later read succeeds', async () => {

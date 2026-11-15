@@ -11,7 +11,7 @@ function describe(summary: ProgressSummary): string {
 
 /**
  * First sign-in when the device and the account both hold progress: show both
- * and keep only the one picked (owner, 2026-11-13). "Decide later" closes the
+ * and keep only the one picked. "Decide later" closes the
  * card; nothing syncs until a choice is made, and the Account row reopens it.
  * Mounted once by the provider, so it shows on every layout.
  */

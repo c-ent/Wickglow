@@ -18,8 +18,12 @@ export type WriteResult = void | boolean | Promise<boolean | void>;
 export interface SaveQueue<T> {
   /** Write this state after `delayMs` with no newer one. Replaces a waiting state. */
   later: (state: T) => void;
-  /** Write this state at once and drop any waiting one, which is older. */
-  now: (state: T) => void;
+  /**
+   * Write this state at once and drop any waiting one, which is older.
+   * Resolves true once this write is saved, false if it failed (a retry may
+   * still be queued, but it has not landed).
+   */
+  now: (state: T) => Promise<boolean>;
   /** Write the waiting state at once, if there is one. */
   flush: () => void;
   /**
@@ -30,6 +34,15 @@ export interface SaveQueue<T> {
   dispose: () => void;
   /** Undo `dispose`. Strict Mode and Fast Refresh re-run an effect on the same store. */
   revive: () => void;
+  /**
+   * This state is in storage already (another tab wrote it). It becomes the
+   * saved one, so a retry or a late failure of an older write cannot put that
+   * older state back over it. A state still waiting to be written (a local
+   * edit or a retry) is dropped: it was built on the state the other tab has
+   * replaced, and the store shows the adopted state, so writing it later would
+   * save something nobody saw.
+   */
+  adopt: (state: T) => void;
 }
 
 /**
@@ -63,31 +76,39 @@ export function createSaveQueue<T>(write: (state: T) => WriteResult, delayMs: nu
     retryMs = Math.min(retryMs * 2, RETRY_MAX_MS);
   };
 
-  const run = (state: T) => {
-    if (disposed) return;
+  // Resolves with whether this one write was saved.
+  const run = (state: T): Promise<boolean> => {
+    if (disposed) return Promise.resolve(false);
     last = { state };
     let result: WriteResult;
     try {
       result = write(state);
     } catch {
       failed(state);
-      return;
+      return Promise.resolve(false);
     }
     if (result === false) {
       failed(state);
-      return;
+      return Promise.resolve(false);
     }
     if (result && typeof (result as Promise<unknown>).then === 'function') {
-      (result as Promise<boolean | void>).then(
+      return (result as Promise<boolean | void>).then(
         (ok) => {
-          if (ok === false) failed(state);
-          else if (last?.state === state) retryMs = RETRY_MIN_MS;
+          if (ok === false) {
+            failed(state);
+            return false;
+          }
+          if (last?.state === state) retryMs = RETRY_MIN_MS;
+          return true;
         },
-        () => failed(state),
+        () => {
+          failed(state);
+          return false;
+        },
       );
-      return;
     }
     retryMs = RETRY_MIN_MS;
+    return Promise.resolve(true);
   };
 
   const flush = () => {
@@ -95,7 +116,7 @@ export function createSaveQueue<T>(write: (state: T) => WriteResult, delayMs: nu
     if (!waiting) return;
     const { state } = waiting;
     waiting = null;
-    run(state);
+    void run(state);
   };
 
   return {
@@ -114,7 +135,15 @@ export function createSaveQueue<T>(write: (state: T) => WriteResult, delayMs: nu
     now: (state) => {
       clear();
       waiting = null;
-      run(state);
+      return run(state);
+    },
+    // `failed` ignores any state but `last`, so this also drops late failures.
+    adopt: (state) => {
+      if (disposed) return;
+      last = { state };
+      retryMs = RETRY_MIN_MS;
+      waiting = null;
+      clear();
     },
     flush,
     dispose: () => {

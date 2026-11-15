@@ -2,9 +2,9 @@
 // Opacity is written as rgba because React Native has no color-mix.
 
 export const colors = {
-  bgBase: '#0E0A17',
-  bgMid: '#1D1328',
-  bgGlow: '#35201F',
+  bgBase: '#1C1007',
+  bgMid: '#42290F',
+  bgGlow: '#6B4417',
   bgSurface: 'rgba(24, 14, 20, 0.93)',
   bgSurfaceSolid: '#140F1C',
   bgCard: 'rgba(255, 255, 255, 0.06)',
@@ -107,8 +107,7 @@ export interface MoodPalette {
  * Moonlit. This is also the single source for the desktop scenes: `SCENES` in
  * `components/wickglow/theme.ts` maps these same palettes into gradient
  * stops and drifting orbs, so a theme is the same name and the same colors on
- * every layout (owner decision, 2026-11-14; the two systems used to carry
- * separate colors under a few matching names).
+ * every layout.
  */
 export const moods: Record<MoodId, MoodPalette> = {
   amber: {

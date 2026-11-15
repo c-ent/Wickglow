@@ -25,10 +25,9 @@ const BASE_LENGTH = 22;
 // seam lands on a whole number of falls and nothing jumps when it wraps.
 const TURN_MS = 9000;
 
-// Cheap deterministic "random" (the classic sin-hash). A given index always
-// gives the same value, so streaks keep their look across renders and the
-// slider can add/remove streaks without reshuffling the rest.
-// 'worklet' lets Reanimated run this on the UI thread inside animated styles.
+// Cheap deterministic "random": a given index always gives the same value, so
+// streaks keep their look across renders and the slider can add or remove
+// streaks without reshuffling the rest.
 export function rand(seed: number) {
   'worklet';
   const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
@@ -67,7 +66,6 @@ export function RainOverlay({ amount }: { amount: number }) {
     if (w > 0 && w !== width.get()) width.set(w);
   };
 
-  // Hooks above must run on every render, so this early return comes after them.
   if (amount <= 0) return null;
   // 8 streaks at the lightest setting up to 50 at full.
   const level = Math.min(100, amount);

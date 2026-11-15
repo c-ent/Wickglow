@@ -1,11 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LEGACY_STORAGE_KEY, parseSavedState, SavedState, STORAGE_KEY } from './saved-state';
+import { parseSavedState, SavedState, STORAGE_KEY } from './saved-state';
 
 // The one place the app reads and writes its saved state. `logic.tsx` loads it
 // once and writes it through `save-queue.ts`. Load parses what it finds through
-// `parseSavedState` and quietly moves a pre-rename `lumifi:state` save onto the
-// current key.
-// Save is the only writer, so the read-failed guard below is the only thing
+// `parseSavedState`. Save is the only writer, so the read-failed guard below is the only thing
 // standing between a bad read and overwriting real progress.
 
 // Set while the last load failed to read storage. A rejected read leaves
@@ -37,34 +35,19 @@ export function loadWickglowState(): Promise<SavedState> {
 
 async function readWickglowState(): Promise<SavedState> {
   let raw: string | null = null;
-  let legacy = false;
   try {
     raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (raw == null) {
-      // The legacy read is guarded too: if it throws, the defaults that come
-      // back must not be written over the current key, which would leave the
-      // progress that only the legacy key holds unreachable.
-      raw = await AsyncStorage.getItem(LEGACY_STORAGE_KEY);
-      legacy = raw != null;
-    }
   } catch {
     readFailed = true;
     return parseSavedState(null);
   }
   readFailed = false;
-  const state = parseSavedState(raw);
-  // The legacy copy is moved across only once it is safely in hand and parsed.
-  // A failure here must not take the readable progress with it, so it is caught
-  // on its own and the loaded state is returned either way.
-  if (legacy) {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, raw as string);
-      await AsyncStorage.removeItem(LEGACY_STORAGE_KEY);
-    } catch {
-      // The next launch retries the migration.
-    }
-  }
-  return state;
+  return parseSavedState(raw);
+}
+
+/** True while saves are skipped because the last load could not read storage. */
+export function savesSkipped(): boolean {
+  return readFailed;
 }
 
 /**

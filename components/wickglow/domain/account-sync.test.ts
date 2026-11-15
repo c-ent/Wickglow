@@ -1,9 +1,10 @@
-import type { DayRecord, SessionRecord } from '@/src/core/progress-log';
+import type { SessionRecord } from '@/src/core/progress-log';
 import { completeSession, removeTask, toggleTask } from '@/src/core/session';
 import { RemoteProgress, RemoteTask, SyncPush } from '@/src/core/sync';
 import { addTask, renameTask } from '@/src/core/tasks';
 import { AccountSync, createAccountSync, ProgressRemote, SESSION_DELAY_MS, TASK_DELAY_MS } from './account-sync';
 import { createInitialState, SavedState } from './saved-state';
+import { createSavedStore } from './saved-store';
 
 // An in-memory account shared by fake devices, shaped like the Firestore
 // records collection: every record carries the server time it was written
@@ -13,7 +14,6 @@ import { createInitialState, SavedState } from './saved-state';
 // every matching record (at least 1), and after that each changed record.
 type Stored =
   | { kind: 's'; at: number; record: SessionRecord }
-  | { kind: 'd'; at: number; record: DayRecord }
   | { kind: 't'; at: number; record: RemoteTask }
   | { kind: 'r'; at: number; epoch: number };
 
@@ -30,12 +30,11 @@ function fakeAccount() {
   const counts = { reads: 0, writes: 0 };
 
   const copy = (since: number): RemoteProgress => {
-    const remote: RemoteProgress = { sessions: [], legacy: [], tasks: [], epoch: null, latest: 0 };
+    const remote: RemoteProgress = { sessions: [], tasks: [], epoch: null, latest: 0 };
     for (const item of records.values()) {
       if (item.at < since) continue;
       remote.latest = Math.max(remote.latest, item.at);
       if (item.kind === 's') remote.sessions.push(item.record);
-      else if (item.kind === 'd') remote.legacy.push(item.record);
       else if (item.kind === 't') remote.tasks.push(item.record);
       else remote.epoch = item.epoch;
     }
@@ -62,7 +61,7 @@ function fakeAccount() {
       listeners.add(entry);
       if (online) {
         const first = copy(since);
-        counts.reads += Math.max(1, first.sessions.length + first.legacy.length + first.tasks.length + (first.epoch != null ? 1 : 0));
+        counts.reads += Math.max(1, first.sessions.length + first.tasks.length + (first.epoch != null ? 1 : 0));
         onConfirmed(first);
       }
       return () => listeners.delete(entry);
@@ -73,11 +72,6 @@ function fakeAccount() {
       for (const record of push.sessions) {
         if (records.has(`s_${record.id}`)) continue;
         write(`s_${record.id}`, { kind: 's', at: clock++, record });
-        changed += 1;
-      }
-      for (const record of push.days) {
-        if (records.has(`d_${record.d}`)) continue;
-        write(`d_${record.d}`, { kind: 'd', at: clock++, record });
         changed += 1;
       }
       for (const task of push.tasks) {
@@ -492,6 +486,25 @@ describe('account sync', () => {
     expect(account.tasks()[0]).toMatchObject({ deleted: true, doneOn: first.store.get().day.d });
   });
 
+  it('keeps the edit times of a state taken from another tab, and stamps a local edit as before', async () => {
+    const account = fakeAccount();
+    const store = createSavedStore<SavedState>(addTask(createInitialState(NOW), 'Essay', null, NOW), () => true, 0);
+    const sync = createAccountSync({ store, remote: account.remote, now: () => NOW + 5000, setTimer: () => 0, clearTimer: () => {} });
+    syncs.push(sync);
+    sync.start('u1');
+    await flush();
+    const id = String(store.get().tasks[0].id);
+    const linked = store.get();
+    // The other tab renamed the task at NOW + 1000 and saved its edit time.
+    const other = renameTask(linked, store.get().tasks[0].id, 'From the other tab');
+    store.adopt({ ...other, sync: { ...linked.sync!, edits: { [id]: NOW + 1000 } } });
+    expect(store.get().sync?.edits).toEqual({ [id]: NOW + 1000 });
+    // A local edit is still stamped with this device's time.
+    store.commit(renameTask(store.get(), store.get().tasks[0].id, 'Local'));
+    expect(store.get().sync?.edits?.[id]).toBe(NOW + 5000);
+    store.dispose();
+  });
+
   it('lets the newer edit win over an older one sent later', async () => {
     const account = fakeAccount();
     let clock = NOW;
@@ -648,7 +661,7 @@ describe('account sync', () => {
     await first.settle();
     expect(first.sync.unsaved()).toBe(false);
 
-    first.sync.forget();
+    await expect(first.sync.forget()).resolves.toBe(true);
     const cleared = first.store.get();
     expect(first.sync.status()).toEqual({ phase: 'off' });
     expect(cleared.xp).toBe(0);
@@ -672,6 +685,20 @@ describe('account sync', () => {
     expect(other.sessions()).toBe(0);
     expect(other.tasks()).toEqual([]);
     expect(first.store.get().xp).toBe(0);
+  });
+
+  it('reports a sign-out clear that could not be written', async () => {
+    const account = fakeAccount();
+    const first = device(account, withFocus(createInitialState(NOW), NOW - 3600000, 25));
+    track(first);
+    first.sync.start('u1');
+    await first.settle();
+    const commit = first.store.commit;
+    first.store.commit = (next: SavedState) => {
+      commit(next);
+      return Promise.resolve(false);
+    };
+    await expect(first.sync.forget()).resolves.toBe(false);
   });
 
   it('signing back in after a sign-out brings the progress back from the account', async () => {

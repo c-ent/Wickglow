@@ -8,88 +8,68 @@ v2
 
 ## Current feature
 
-Google Play release (resumed 2026-11-14, after the owner marked accounts and saving done). Steps under Next up. Merge conflicts with `main` were resolved on `dev` on 2026-11-14.
+Landing page (roadmap #12), alongside the Google Play release, whose remaining steps are owner tasks.
 
 ## Current goal
 
-Ship Wickglow on Google Play. Cosmetics, private circles and focus rooms stay out of scope.
+A web landing page that explains Wickglow and offers the Android APK for download, live before the Play listing exists. Ship Wickglow on Google Play after that.
 
 ## Not yet completed
 
-- Google Play release (current). See Next up.
-- `expo-dev-client` is still in release builds (needed for the dev profile, not yet changed).
-- C1 from [../issues.md](../issues.md): the uncleared videos.
+- Landing page (current). See roadmap #12.
+- Google Play release. See Google Play deployment.
+- EAS preview and production environments have no Firebase vars yet (only development does), so a `preview` APK build cannot reach Firebase until the seven vars are ticked for both on expo.dev. See `docs/feature/firebase.md`, Owner tasks.
+- Review fixes 2026-11-15: no session can start while a sign-out runs, and sign-out stops when storage could not be read at launch. A state taken from another tab keeps that tab's task edit times. Gallery arrows keep counting past either end. Privacy policy: removed the wrong Android streaming sentence. Pixabay licence note now covers lightly changed copies.
+- Landing gallery 2026-11-15: the pixel-art meadow (`desktop.webp`) is now the first slide. The third slide is a new Music panel shot (`desktop-2.webp`, from the new `screenshots/desktop-2.png`) and replaces the Amber one.
+- C1 fixed 2026-11-15: every video left is cleared, and Night Hills was removed. See `BACKGROUND_LICENSES.md`. The landing page now waits only on the APK link.
+- App to landing page link 2026-11-15 (owner): web only, a quiet "About Wickglow" link as the last line of Timer settings (phone Timer tab, tablet side column, desktop settings card). It opens `/?home` (`LANDING_HOME_PATH`) in a new tab, so the returning-visitor script does not send it back and a running session keeps going.
 
 ## Open questions
 
-- Sign-out with unsaved progress (2026-11-14, not built): instead of removing it after the warning, the device could keep the unsaved part aside under that account's id and send it the next time the same account signs in here, never to another account. Needs extra save fields and sync logic. Owner to decide if it is wanted.
-- Target audience: decided 2026-11-14 (owner): 13 and over, to stay out of Play's Families policy. The privacy policy says Wickglow is not directed at children under 13. In the Play Console's target audience form, pick only 13+ age groups and answer "no" to appealing to children.
-- Security (2026-11-14): `npm audit` reports 0 vulnerabilities through `overrides` in `package.json` (`@grpc/grpc-js`, `uuid`, `re2`, `@opentelemetry/core`, `glob`), all transitive copies in dev-only `firebase-tools`; the app bundle is unaffected. Do not run `npm audit fix --force`: it downgrades `firebase`/`firebase-tools` to older majors. Re-check the overrides when `firebase-tools` resolves them itself.
-- Play release: the privacy policy URL, the store name after the trademark search, and the developer account.
-- Spotify widget terms: they require a privacy policy that says the embed sets cookies, including third-party ones, and how to manage them. Needed before release if Spotify embeds ship.
-- The Apple Music card that floats bottom-right on desktop after the Music panel closes, with a "Find stream" button: keep it or not?
-- Before release: do `assets/backgrounds/videos/original/` (about 290 MB) and `backup/` stay in the repo?
-- More background scenes. Not needed for release; phone and tablet show no pixel art.
-- Two open browser tabs (2026-11-14): a change in one tab overwrites a pause (or any change) made in the other, because each saves its whole state. Options: leave it, have tabs pick up each other's saves, or let only one tab save. Owner to decide.
+Landing page (roadmap #12). Built 2026-11-15. Moved the same day (owner): the landing page is `/` on the web and the web app is `/app`; returning visitors skip to `/app`; `/download` redirects to `/`. Android still opens the app at `/`. See roadmap #12. Waiting on the owner for item 1; item 2 is done:
 
-## Next up
+1. The Google Drive share link for the APK (set to "Anyone with the link"). Replace `APK_URL` in `components/landing/content.ts`; it is a placeholder (`https://drive.google.com/`) until then. Drive shows a "can't scan for viruses" page before files over about 100MB download, so the button may land there first.
+2. Screenshots are in (2026-11-15): WebP copies in `assets/landing/`, made from `assets/images/screenshots/` (about 80KB instead of 1.8MB), shown by `GALLERY` (three desktop shots in a Mac-style window) and `PHONE_SHOT` (beside the download) in `content.ts`. Replace a file in `assets/landing/` to change one. Gallery redesigned 2026-11-15: on the same 1040 column as the other sections (first built at 1200; narrowed the same day so its edges line up), browser title bar with an address pill (`GALLERY_ADDRESS`), warm glow under the window, scene tabs plus a per-slide `caption` instead of dots.
 
-In this order:
+Sign-out with a session running: decided 2026-11-15 (owner), built. Signing out resets a running or paused session to idle and cancels its alarm (the Reset button's `run.reset`) before the device is cleared, so a session begun under one account can never finish into the next account's progress.
 
-1. Owner: trademark and store-name search for Wickglow.
-2. Privacy policy: drafted in `public/privacy.html` (2026-11-14). Owner: review and deploy it, check `https://wickglow.vercel.app/privacy` loads, then put that URL in the Play Console. Also check the email-based account deletion (`/delete-account`) against Play's current policy.
-3. Owner: create the Play Console developer account ($25 one time).
-4. Background licences (`BACKGROUND_LICENSES.md`): add the permission text for `frog_lily_pond` (Abi Toads) and Wallper's reply for `cyberpunk_desk`; confirm Wallper's permission covers `snowy_sled`, `mossy_branch` and `night_hills` and add their page links; add the row for `270983_medium.mp4` (Classic, Pixabay) if still missing.
-5. Check the final Android manifest: no microphone permission, and no new permission, ads or tracking without the owner's go-ahead.
-6. Store listing: name, short and full description, icon, feature graphic, screenshots.
-7. Data Safety form, content rating and target audience.
-8. Release build: `eas build --platform android` (an `.aab`, R8 minified). Test it on a device, because a debug build does not show R8 problems.
-9. Closed test: 12 testers for 14 consecutive days (personal accounts created after 13 November 2023). Start as soon as the build is ready.
-10. Owner: apply for production access once the closed test has run 14 days.
-11. `eas submit` to production.
+Review fixes 2026-11-15: landing previews built from app buttons (tasks, calendar) are `inert`; a gallery tab press clears a pending arrow target; `adopt` (another tab's save) becomes the save queue's saved state and drops a waiting retry, a late failure of an older write, and a waiting local edit (the store shows the adopted state, so what is written matches what is shown); a `storage` event is only taken while storage still holds its value, so an old event cannot undo a newer local commit (`domain/other-tab.ts`); sign-out waits for the cleared state to be written and does not sign out (toast) if it fails; a change of account drops a waiting sign-out, and a sign-out overtaken while the device clears does not sign out (sync restarts if the same account is still signed in and no other sign-out runs); on a phone or tablet a task's controls wrap under the title rather than squeezing it below 120; the user guide and privacy policy say subtasks sync (their shown/hidden state stays local) and name streaming and scene downloads as the network exceptions without an account; a session record's day must be a real, unpadded `calendarKey` day.
 
-Run the device checks below during the closed test.
+## Google Play deployment
+
+Work for the owner, in order:
+
+1. **Privacy policy URL.** Deployed at `https://wickglow.vercel.app/privacy`. Paste it into the Play Console privacy policy field.
+2. **Account deletion page.** Check that `https://wickglow.vercel.app/delete-account` loads. Play requires a web link for account deletion requests.
+3. **Store listing.** App name: Wickglow. Icon: done. Still to add: short description, full description, feature graphic (1024×500), and at least two phone screenshots.
+4. **Data Safety form.** Declare what the app collects: sign-in email and name (optional), and saved progress for accounts; nothing else. Check the answers against the privacy policy before submitting.
+5. **Content rating questionnaire.**
+6. **Target audience.** 13+ age groups only, and "No" to appealing to children.
+7. **Permissions declaration.** The app declares `SCHEDULE_EXACT_ALARM` and `USE_EXACT_ALARM` (session-end alarm) and a media playback foreground service. Google may ask why the exact-alarm permissions are needed. Check the declaration before submitting.
+8. **Background licences** (`BACKGROUND_LICENSES.md`). Done 2026-11-15: every video in the app is cleared (Pixabay, CraftPix, or Abi Toads' permission). Keep screenshots of Abi's message.
+9. **Release build.** The APK for testing is installed. For Play, build an `.aab` with `eas build --platform android` (production profile). Test that build on a device, because a debug build does not show R8 problems.
+10. **Closed test.** 12 testers opted in for 14 consecutive days (personal accounts created after 13 November 2023). Start it as soon as the release build is ready.
+11. **Production access.** Apply after the closed test has run 14 days.
+12. **Submit.** Run `eas submit` to production.
+13. **Create the Play Console developer account** ($25 one time, identity verification can take a few days). Steps 3 to 12 happen in that account, so it has to exist first in practice, even though it is listed last.
 
 APK builds until then: `eas build --platform android --profile preview` (sideloadable APK, same EAS keystore Play will use, so do not delete it). EAS pins Node 24.12.0. If your npm config has `legacy-peer-deps=true`, remove it (`npm config delete legacy-peer-deps`) or `npm ci` on EAS fails. EAS project: `@cent_1214/wickglow`. The 13 Expo patch updates (2026-11-14) changed native modules, so the next APK needs a fresh EAS build.
 
-Out of scope by owner decision, 2026-11-10: cosmetics, private circles, focus rooms, achievements.
+## Next up
+
+None right now.
 
 ## Still to check
 
-### On an Android device (needs a fresh APK)
+- Retired scene clean-up (2026-11-15, from a code review): on launch the app deletes downloaded scenes no longer in `VIDEOS` or `PIXEL_ART` (`removeRetiredScenes`). On a phone that had the old Cyberpunk Desk or Night Hills downloaded, check they are gone and the other downloads stay.
 
-- Build: a development build installs and runs on the Xiaomi Pad 6 (arm64-only `buildArchs`); the preview APK is smaller than before (107 MB).
-- Keyboard: on the phone sheet, a task and a subtask field stay above the keyboard; on tablet, the side column's task fields too, and typing keeps focus; on a large tablet in landscape (desktop layout), a task, a subtask edit near the bottom of the Tasks card, and a duration field in Timer settings stay above the keyboard. Tablet zen waits while the keyboard is up. Stuck-keyboard fix (2026-11-14): type in the sign-in card, then Continue with Google, back out or finish: Progress and the side cards (Scenes) return to full height. Account menu: Edit name, then Cancel, Save or tap outside: the keyboard closes and Progress drops back. While editing the name, the menu moves up to end above the keyboard (Delete account visible, or reachable by scrolling) and returns under the chip when the keyboard closes. Sign-in card in landscape with the keyboard up: its top stays on screen and it scrolls.
-- Icon and splash: the icon looks right; the splash shows the whole round logo, sharp, on phone and tablet (if too small, raise `imageWidth` for `expo-splash-screen` in `app.json`).
-- Music: all 14 tracks play, play into the next one, and keep playing with the screen off; the seek bar counts up, a drag seeks, and it resets on a track change; the volume slider works and a track picked at low volume stays low; repeat on restarts the track, off advances, and it survives an app restart; the music starts with the timer.
-- Own music files: picking one plays it, also with the screen off; the cache holds no second copy; a pick where every copy fails shows "Could not add those files".
-- Ambient: each loop starts when its slider leaves zero, repeats with no click or gap (Clock, Rain, Waves, Fireplace first), and keeps playing with the screen off; the lock-screen card reads "Ambient" when only ambient plays; a slider level is kept if the app is closed right after dragging. Listen to Wind: it is a 12.8 s gust and may pulse when it repeats. Ambient effects (rain, embers, fireflies, waves) stay smooth with all of them on.
-- Timer and session end: the time changes every second with no skipped or doubled second, and the candle burns down; the flame flickers; the halo sits on the flame, has no hard edge and dims on pause. A session ending with the app open and with it closed completes once and shows the end card; the chime and notification sound are unchanged and still arrive after several sessions in a row; on Android 12 and 13+ the alarm fires on time, and on 13+ the app is not under "Alarms & reminders". Fresh install: press Start and answer the notification prompt slowly, the timer was already counting. Start then Reset quickly: no notification arrives later. Auto-start with "Lower the volume" or "Fade out and stop": the break starts with the music at full volume. Changing the focus length mid-session does not make the candle jump. Ticking a task on and off quickly keeps the count, quest and toast right.
-- Phone layout: five tabs (Tasks, Sounds, Stats, Mood, Timer) fit, with the quest dot on Stats; Sounds shows Tracks and Ambient only, with no space reserved for a player; Stats and Calendar switch, the calendar and the quest tiles scroll clear of the tab bar; Mood shows seven themes three to a row with Tide at the left under Violet (and Tide plus Video on the left two cells on tablet), and the round swatches read well; the cards (player, quests, three timer settings cards, Last 7 days) line up; the larger section titles do not crowd; the "When a session ends" rows are the same size. The sheet closes from its tab, close button, handle and the dimmed area; the handle and mini timer show while it slides; TalkBack skips the closed sheet. Zen fades the tab bar and it cannot be tapped. The pills and level ring open Stats. On a small phone (about 640 high) the candle has room. The glass reads clear and the sheet text is readable without blur.
-- Tablet layout: Sounds shows the tracks with no tabs; the side column reads Tasks, Sounds, mixer, quests, stats, calendar, timer settings; a task row keeps its date and buttons on the first row and a long title wraps up to three lines; the Video mood card's spinner fits.
-- Large tablet in landscape (desktop layout, needs the Vercel deploy): a remote scene tile shows its size, a tap shows the percentage and then plays it; it still plays in airplane mode; with the network off a tap shows "Tap to retry"; closing the app mid-download leaves no broken scene; tapping another tile during a download keeps that tile selected. On a phone or tablet with a remote video saved from desktop, Classic plays.
-- Backgrounds and fonts: video playback is smooth; switching shows no black flash and settles on the last pick; fonts are right from the first frame.
+Everything else was checked by the owner on 2026-11-15: two-device sync, ambient sounds with the screen off, own music files (no duplicate copy), timer controls, music source switching, the Scenes panel, the landing page at phone width, the desktop stream player and the tablet side column spacing.
 
-### Web black screen fix
+## Tooling notes
 
-- Run `npx expo start --web` and open it: the app shows (not a black screen). After the next Vercel deploy, the live site still loads.
+- Clean-up (2026-11-15): code comments reviewed (outdated ones fixed, tutorial-style and "(owner, date)" notes removed); leftovers removed (`task-panel.tsx`, `streamCardHeight`); all backward compatibility removed (Lumifi save key and alarm id, old notification channels, the no-log and `videoBg: true` save conversions). Rules for both are in `conventions.md`. Firestore (owner, 2026-11-15): `d_` day-total records removed, and `day` is required on every session record, in the code, the rules and the rules tests (22 pass in the emulator). **Owner task: redeploy the rules** (`npm run deploy:rules`). Day totals and sessions without `day` already in the account are ignored from now on, so XP, streak and calendar lose that history.
 
-### Accounts
+- Docs (2026-11-15): added `docs/user-guide.md` (for users) and `docs/developer-guide.md` (for contributors; links to the agent docs instead of copying them), linked from `README.md`. Keep both in step when a user-visible feature or the code layout changes.
 
-- Reads: Firebase console, Firestore, Usage. Reopening the app with nothing new should add only a read or two.
-- Sign-out clears the device (2026-11-14): signed in and saved, Sign out is immediate and the app shows level 1 with no tasks, with theme and timer lengths unchanged; signing back in brings the progress back. Sign in as a second, new account: it starts at level 1. Offline (web: DevTools offline; Android: airplane mode), finish a session, then Sign out: "Saving your progress…" for about 4 s, then the warning; Stay signed in keeps everything, Sign out anyway clears it. Back online before the 4 s are up: it signs out by itself.
-- Sign-in toast, in the browser and on Android: "Signed in. Your progress saves to your account" after a sign-in, "Account created. Check your email to confirm it" after Create account, nothing on a restored session or a cancelled Google picker.
-- After the next deploy: `https://wickglow.vercel.app/privacy` loads.
-
-### In a browser
-
-- Android Chrome (phone and tablet): the task, subtask and task edit fields do not zoom the page and stay above the keyboard; the 16px fields still fit their rows; on a tablet in landscape (desktop layout), the Tasks card stays above the keyboard. iPad or iPhone Safari: the same, and the music plays (needs Safari 18.4+ for Ogg Opus).
-- Most of the browser list passed in desktop Chrome on 2026-11-14 (see completed.md). The reduced-motion "Loading scene…" pill, the missing Full screen button on browsers without the API, and the focus chip on desktop were checked by the owner. Still to check: a day with minutes never shows a quiet line (checked in code only, `describeDay`).
-- Themes, owner to look at (2026-11-14): the desktop tint swatches show each theme's dark background, while the mood cards show its bright flame colour, so the two rows do not share colours. On desktop, Amber (a dark purple, not amber) and Ash are hard to tell apart.
-- Tablet side column (2026-11-14, at 720 wide): the SOUNDS heading has nothing under it, then the Mood cards, then the track player. Check whether Mood should sit above Sounds.
-
-### Known issues to look at
-
-- In a 2026-11-13 browser pass, only one of three saved stream links survived a reload. Expected since 2026-11-12 (#5): adding a link replaces the saved one (`logic.tsx`, "One saved link at a time"). Likely not a bug.
-- Paused session found running after a reload: cause confirmed 2026-11-14 in desktop Chrome. One tab: pause, reload, stays paused. Two tabs: both running, pause in A, then any change in B (an ambient tint) writes B's whole state (`wickglow:state`, one blob) and A reloads running. An idle second tab does not overwrite. Not fixed; whether to sync tabs (for example a `storage` event listener) is an open question for the owner.
-- Dev saves that already moved to records keep their old day totals and may count a still-listed task twice on that one day (from the PR #13 review, 2026-11-14).
+- `npm audit` reports 0 vulnerabilities through the `overrides` in `package.json` (`@grpc/grpc-js`, `uuid`, `re2`, `@opentelemetry/core`, `glob`), all transitive copies in dev-only `firebase-tools`; the app bundle is unaffected. Do not run `npm audit fix --force`: it downgrades `firebase`/`firebase-tools` to older majors. Re-check the overrides when `firebase-tools` resolves them itself.
+- Agent skills (2026-11-15): removed `add-supabase-table` and `change-progression-rules` (both written for the old Supabase backend). Installed `grilling`, `codebase-design` and `domain-modeling` from `mattpocock/skills` with `npx skills add`, because `grill-me` and `improve-codebase-architecture` call them. They are pinned in `skills-lock.json` and linked into `.claude/skills/` for Claude Code.

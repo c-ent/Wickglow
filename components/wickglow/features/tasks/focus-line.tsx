@@ -51,8 +51,7 @@ export function FocusLine({
       <Text style={[styles.text, mode === 'task' ? styles.textOn : null]} numberOfLines={1}>{text}</Text>
     </>
   );
-  // `fade(color, a)` = the accent at alpha `a`. The "task" state is a bit
-  // stronger than "empty" so a chosen task reads as filled-in.
+  // The "task" state is a bit stronger than "empty" so a chosen task reads as filled-in.
   const chip = [styles.chip, mode === 'empty' ? styles.chipEmpty : null, { borderColor: fade(accent, mode === 'task' ? 0.4 : 0.5), backgroundColor: fade(accent, mode === 'task' ? 0.1 : 0.06) }];
 
   if (!onPress) {
@@ -70,7 +69,6 @@ export function FocusLine({
       pointerEvents={zen ? 'none' : 'auto'}
       accessibilityElementsHidden={zen}
       importantForAccessibility={zen ? 'no-hide-descendants' : 'auto'}
-      // Pressable accepts a function for `style` so it can react to the pressed state.
       style={({ pressed }) => [chip, { opacity: pressed ? 0.7 : opacity }]}
     >
       {body}

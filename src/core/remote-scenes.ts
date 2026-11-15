@@ -21,10 +21,10 @@ export const SCENE_HOST = 'https://wickglow.vercel.app/scenes';
 export const SCENE_WEB_PATH = '/scenes';
 
 /**
- * A file on the scene host. `path` is relative to the host and carries a
- * version folder (`v1/...`): a re-encoded file gets a new version, so a phone
- * that holds the old one downloads the new one instead of trusting it.
- * `bytes` is the exact file size, used to check a finished download.
+ * A file on the scene host. `path` is relative to the host (`v1/videos/...`).
+ * A replaced or re-encoded file needs a new path (a new version folder or
+ * file name), so a phone that holds the old one downloads the new one instead
+ * of trusting it. `bytes` is the exact file size, used to check a download.
  */
 export interface RemoteFile {
   path: string;
@@ -64,6 +64,16 @@ export function localFileName(file: RemoteFile): string {
     .join('_')
     .replace(/[^A-Za-z0-9._-]/g, '');
   return name || 'scene';
+}
+
+/**
+ * Downloaded files that no scene uses any more: a replaced video (its old
+ * version path) or a removed one. `present` is the names in the scenes folder;
+ * `.part` files are left alone, since their own clean-up handles them.
+ */
+export function retiredSceneNames(present: readonly string[], inUse: readonly RemoteFile[]): string[] {
+  const keep = new Set(inUse.map(localFileName));
+  return present.filter((name) => !name.endsWith('.part') && !keep.has(name));
 }
 
 /** A file size as a short label: `9.4 MB`, or `0.6 MB` for a small one. */

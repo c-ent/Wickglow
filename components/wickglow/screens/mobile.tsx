@@ -84,11 +84,9 @@ const glassControl = {
 
 export function MobileWickglow() {
   const lamp = useWickglow();
-  // Actions never change identity, so they are pulled out once (see logic.tsx).
   const { setMode, toggle, startNext, dismissEnding, reset, skip } = lamp;
   // Streaming is desktop-only; end one left playing from a wider window.
   useEndStream();
-  // Safe-area insets = the notch / status bar / home-indicator sizes in px.
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   // How far the on-screen keyboard covers the bottom, so the sheet can rise above it.
@@ -102,7 +100,7 @@ export function MobileWickglow() {
   // "Zen": while focusing with the sheet closed, the UI fades away after 4s
   // of no touches. Any touch counts as activity (`poke`).
   const { zen, poke } = useZen(lamp.running && lamp.mode === 'focus' && lamp.zenOpt && !open, 4000);
-  // Reanimated shared value driving the sheet's slide (runs on the UI thread).
+  // The sheet's slide, run on the UI thread.
   const sheetOffset = useSharedValue(1);
   const mood = lamp.moodTheme;
   // The tab bar floats a little above the bottom edge (or the home indicator).

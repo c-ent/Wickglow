@@ -8,7 +8,7 @@ type AlarmCall = ['schedule', number, string] | ['cancel'];
 
 // A session run wired to stand-ins: an in-memory state, an alarm that only
 // records what it was asked, and a clock the test moves by hand.
-function setup(overrides: Partial<SavedState> = {}, permission = { granted: true, asked: true }) {
+function setup(overrides: Partial<SavedState> = {}, permission = { granted: true, asked: true }, canStart?: () => boolean) {
   let state: SavedState = { ...createInitialState(T0), ...overrides };
   let time = T0;
   const alarmCalls: AlarmCall[] = [];
@@ -39,6 +39,7 @@ function setup(overrides: Partial<SavedState> = {}, permission = { granted: true
     show: (change) => shown.push(change),
     now: () => time,
     random: () => 0,
+    canStart,
   });
   return {
     run,
@@ -87,6 +88,20 @@ describe('session run', () => {
     expect(t.get().session.status).toBe('running');
     expect(t.alarmCalls).toEqual([]);
     expect(t.get().notificationsAsked).toBe(true);
+  });
+
+  it('does not start, or keep running past a skip, while starting is held off', async () => {
+    let allowed = false;
+    const t = setup({ auto: true }, undefined, () => allowed);
+    await t.run.start();
+    expect(t.get().session.status).toBe('idle');
+    expect(t.music.start).not.toHaveBeenCalled();
+    allowed = true;
+    await t.run.start();
+    expect(t.get().session.status).toBe('running');
+    allowed = false;
+    t.run.skip();
+    expect(t.get().session.status).toBe('idle');
   });
 
   it('ignores a second start while a session is running', async () => {

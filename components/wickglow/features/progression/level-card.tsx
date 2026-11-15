@@ -7,9 +7,8 @@ import { panelStyles as styles } from '@/components/wickglow/shared/panel-styles
 import { useTone } from '@/components/wickglow/features/tone';
 import { progressWide as wide } from '@/components/wickglow/features/progression/wide-styles';
 
-// Radius of the progress ring, and its circumference. The ring is a circle
-// whose dash pattern is as long as the circle; shifting the dash offset hides
-// part of it, which is the standard SVG trick for a circular progress bar.
+// Radius of the progress ring, and its circumference: the dash offset hides
+// part of a dash as long as the circle, which draws the progress.
 const RING = 26;
 const RING_LENGTH = 2 * Math.PI * RING;
 
@@ -21,6 +20,37 @@ const RING_LENGTH = 2 * Math.PI * RING;
 export function LevelCard({ mobile = false, wide: desk = false }: { mobile?: boolean; wide?: boolean }) {
   const { level, levelName, xpInLevel, xpNeeded } = useWickglow();
   const tone = useTone(mobile);
+  return (
+    <LevelCardView
+      level={level}
+      levelName={levelName}
+      xpInLevel={xpInLevel}
+      xpNeeded={xpNeeded}
+      accent={tone.accent}
+      desk={desk}
+    />
+  );
+}
+
+/**
+ * The card itself, drawn from the numbers it is given. `LevelCard` feeds it the
+ * live level; the web landing page feeds it sample numbers.
+ */
+export function LevelCardView({
+  level,
+  levelName,
+  xpInLevel,
+  xpNeeded,
+  accent,
+  desk = false,
+}: {
+  level: number;
+  levelName: string;
+  xpInLevel: number;
+  xpNeeded: number;
+  accent: string;
+  desk?: boolean;
+}) {
   // 0..1 progress through the current level (guards against divide-by-zero).
   const ratio = xpNeeded > 0 ? Math.min(1, xpInLevel / xpNeeded) : 0;
   const width = `${Math.round(ratio * 100)}%` as const;
@@ -40,7 +70,7 @@ export function LevelCard({ mobile = false, wide: desk = false }: { mobile?: boo
                 cy="31"
                 r={RING}
                 fill="none"
-                stroke={tone.accent}
+                stroke={accent}
                 strokeWidth={5}
                 strokeLinecap="round"
                 strokeDasharray={`${RING_LENGTH} ${RING_LENGTH}`}
@@ -53,7 +83,7 @@ export function LevelCard({ mobile = false, wide: desk = false }: { mobile?: boo
             <Text style={deskStyles.name}>Level {level} {levelName}</Text>
             <Text style={[deskStyles.meta, wide.tabular]}>{xpInLevel} / {xpNeeded} XP · {left} to Level {level + 1}</Text>
             <View style={[wide.barTrack, deskStyles.bar]}>
-              <View style={[wide.barFill, { width, backgroundColor: tone.accent }]} />
+              <View style={[wide.barFill, { width, backgroundColor: accent }]} />
             </View>
           </View>
         </View>
@@ -68,7 +98,7 @@ export function LevelCard({ mobile = false, wide: desk = false }: { mobile?: boo
         <Text style={styles.meta}>{xpInLevel} / {xpNeeded} XP</Text>
       </View>
       <View style={styles.barTrack}>
-        <View style={[styles.barFill, { width, backgroundColor: tone.accent }]} />
+        <View style={[styles.barFill, { width, backgroundColor: accent }]} />
       </View>
     </View>
   );

@@ -1,8 +1,8 @@
 /**
- * The one import point for components. It re-exports types, colors and a few
- * core helpers, and defines the screen themes (SCENES for desktop, MOODS for
- * phone), timer presets and the time formatter. Components import from here
- * so they never reach into `src/core` directly.
+ * The screen themes (SCENES for desktop, MOODS for phone and tablet), timer
+ * presets and the time formatter, plus re-exports of the types, colours and
+ * core helpers most components need. A component that needs something else
+ * from `src/core` imports it from there directly.
  */
 import { hasOpenQuests, QUESTS } from '@/src/core/quests';
 import type { DayStats, Task, TimerCfg, TimerMode } from '@/src/core/types';
@@ -16,8 +16,8 @@ export { monthGrid, monthRef, monthShade, quietDayLine, shiftMonth } from '@/src
 export { hasOpenQuests, LEVEL_NAMES, QUESTS, levelInfo };
 export { breakWax, colors, fonts, radius, rounded } from '@/src/theme/tokens';
 
-// Desktop scenes and phone moods are the same nine themes (owner decision,
-// 2026-11-14), so a scene is always the same id as a mood.
+// Desktop scenes and phone moods are the same nine themes, so a scene is always
+// the same id as a mood.
 export type SceneId = MoodId;
 
 // Volume sliders, each 0..100. The ambient sounds are listed in src/core/ambient.ts.
@@ -57,8 +57,6 @@ export interface MoodTheme {
   accent: string;
 }
 
-// Layout detection lives in `features/layout.ts`, not here.
-
 // Insertion order of `moods` (src/theme/tokens.ts) is the one display order
 // for both pickers, so Amber/Moonlit/Rose/... land in the same spot on
 // desktop and on phone/tablet.
@@ -73,7 +71,7 @@ const moodNames: Record<MoodId, string> = {
 // Desktop scenes are built from the same mood palettes: the background
 // base/mid/glow become the gradient's three stops, and the three flame colors
 // become the three drifting orbs. A scene is always the same name and the
-// same colors as its mood (owner decision, 2026-11-14).
+// same colors as its mood.
 export const SCENES: SceneTheme[] = THEME_ORDER.map((id) => ({
   id,
   name: moodNames[id],

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { MixLevels, silentAmbient } from '@/src/core/ambient';
 import { idleSession, SessionClock } from '@/src/core/clock';
 import { emptyDay, restoreDayHistory } from '@/src/core/history';
-import { emptyLog, legacyFromHistory, MAX_DAY_MINUTES, MAX_DAY_TASKS, ProgressLog, sessionRecord, type DayRecord, type FinishedRecord, type SessionRecord } from '@/src/core/progress-log';
+import { emptyLog, ProgressLog, sessionRecord, type FinishedRecord, type SessionRecord } from '@/src/core/progress-log';
 import type { SyncMeta } from '@/src/core/sync';
 import { OwnTrack, parseOwnTracks } from '@/src/core/own-tracks';
 import { parseStreamLinks, StreamLink } from '@/src/core/stream-links';
@@ -18,15 +18,14 @@ import { MoodId, SceneId } from '@/components/wickglow/theme';
 // The shape of everything Wickglow persists, and the boundary that validates it.
 // `storage.ts` hands the raw string in, `parseSavedState` turns it into a
 // `SavedState`, and `logic.tsx` writes that same shape back out. Every read is
-// defensive: a stored save can come from an older version or be hand-edited, so
+// defensive: a stored save can be hand-edited or damaged, so
 // every field is read through a Zod schema (src/data/lenient.ts) and falls back
 // to a default rather than throwing. The result is built from the known fields
-// only, so a key this version does not know (an old `goals` list, a typo) is
+// only, so a key this version does not know (a typo, a removed field) is
 // dropped instead of being carried in the save forever. Parsing never throws: a
 // save that is not valid JSON becomes a fresh state.
 
 export const STORAGE_KEY = 'wickglow:state';
-export const LEGACY_STORAGE_KEY = 'lumifi:state';
 
 const MODES = ['focus', 'short', 'long'] as const satisfies readonly TimerMode[];
 // Scenes and moods are the same themes (see components/wickglow/theme.ts).
@@ -69,8 +68,7 @@ export function createInitialState(now = Date.now()): SavedState {
     cfg,
     auto: false,
     zenOpt: true,
-    // Dusk (the old desktop default) was removed 2026-11-14; desktop now
-    // defaults to the same theme as phone/tablet.
+    // Desktop starts on the same theme as phone and tablet.
     scene: 'amber',
     mood: 'amber',
     videoBg: null,
@@ -95,10 +93,11 @@ export function createInitialState(now = Date.now()): SavedState {
 }
 
 /**
- * The state after signing out (owner, 2026-11-14): the progress (XP, streak,
+ * The state after signing out: the progress (XP, streak,
  * history, tasks, the log and the link to the account) goes back to a fresh
  * install's, so the next account to sign in here cannot take it. Settings,
  * sounds, scenes and the timer stay: they are per device and never synced.
+ * (Signing out resets a running session first, see `leave` in account.tsx.)
  */
 export function withoutProgress(state: SavedState, now = Date.now()): SavedState {
   const fresh = createInitialState(now);
@@ -118,7 +117,7 @@ export function withoutProgress(state: SavedState, now = Date.now()): SavedState
 /**
  * Turns stored JSON into a `SavedState`, never throwing. Anything missing or
  * unrecognised falls back to `createInitialState`, and a key that is not part
- * of the state (a legacy `goals` list) is dropped on the way through.
+ * of the state is dropped on the way through.
  */
 export function parseSavedState(raw: string | null, now = Date.now()): SavedState {
   const fresh = createInitialState(now);
@@ -151,15 +150,13 @@ export function parseSavedState(raw: string | null, now = Date.now()): SavedStat
       // subtask's id is cleared.
       activeId: activeTask && activeTask.parentId == null ? activeTask.id : null,
       auto: saved.auto === true,
-      videoBg: saved.videoBg === true ? 'classic' : readVideoId(saved.videoBg),
+      videoBg: readVideoId(saved.videoBg),
       pixelBg: readPixelArtId(saved.pixelBg),
       musicEnd: readMusicEnd(saved.musicEnd),
       musicLoop: saved.musicLoop === true,
       notificationsAsked: saved.notificationsAsked === true,
       session: readSession(saved.session, cfg, now),
-      // A save from before the log existed turns its daily totals into day
-      // records once, so they can be uploaded to an account.
-      log: saved.log === undefined ? { sessions: [], legacy: legacyFromHistory(restored.days, tasks) } : readLog(saved.log),
+      log: readLog(saved.log),
       sync: readSyncMeta(saved.sync),
     };
   } catch {
@@ -236,7 +233,7 @@ function readSession(value: unknown, cfg: TimerCfg, now: number): SessionClock {
   const session = readAs(sessionFields, value, null);
   if (!session) return idleSession('focus', modeDurationMs(cfg, 'focus'));
   const { mode, status } = session;
-  // A save from before totalMs existed falls back to the configured length.
+  // A missing or untrusted length falls back to the configured one.
   const totalMs = Math.min(session.totalMs ?? modeDurationMs(cfg, mode), MAX_MINUTES[mode] * 60000);
   const remainingMs = session.remainingMs == null ? totalMs : Math.min(session.remainingMs, totalMs);
   const endAt = session.endAt == null ? null : Math.min(session.endAt, now + totalMs);
@@ -250,8 +247,7 @@ const taskSchema = z.object({
   done: z.boolean(),
   // A count of finished sessions: a whole number, never below zero.
   pomos: z.number().transform((pomos) => Math.max(0, Math.floor(pomos))),
-  // A save from before doneOn existed has no completion day to fall back on,
-  // so only a task already marked done keeps an unknown day.
+  // A missing or invalid completion day reads as unknown.
   doneOn: z.string().nullable().catch(null),
   parentId: z.number().nullable().catch(null),
   date: z.string().transform(parseDueDate).nullable().catch(null),
@@ -296,33 +292,20 @@ function readHistory(value: unknown): DayHistory {
   return history;
 }
 
-// `task` and `d` are checked by `sessionRecord`, and either may be missing.
+// `task` and `d` are checked by `sessionRecord`; a session without `d` is dropped.
 const logSessionSchema = z.object({ end: z.number(), minutes: z.number(), task: z.unknown().optional(), d: z.unknown().optional() });
-const logDaySchema = z.object({ d: dayKey, minutes: count, sessions: count, tasks: count });
 const finishedSchema = z.object({ task: z.int(), d: dayKey });
 
 function readLog(value: unknown): ProgressLog {
   if (!value || typeof value !== 'object') return emptyLog();
-  const log = value as { sessions?: unknown; legacy?: unknown; finished?: unknown };
+  const log = value as { sessions?: unknown; finished?: unknown };
   const sessions: SessionRecord[] = [];
   const ids = new Set<string>();
   for (const entry of validItems(logSessionSchema, log.sessions)) {
-    const record = sessionRecord(entry.end, entry.minutes, typeof entry.task === 'number' ? entry.task : null, entry.d);
+    const record = sessionRecord(entry.end, entry.minutes, typeof entry.task === 'number' ? entry.task : null, entry.d ?? null);
     if (!record || ids.has(record.id)) continue;
     ids.add(record.id);
     sessions.push(record);
-  }
-  const legacy: DayRecord[] = [];
-  const days = new Set<string>();
-  for (const entry of validItems(logDaySchema, log.legacy)) {
-    if (days.has(entry.d)) continue;
-    days.add(entry.d);
-    legacy.push({
-      d: entry.d,
-      minutes: Math.min(MAX_DAY_MINUTES, Math.floor(entry.minutes)),
-      sessions: Math.min(MAX_DAY_MINUTES / 10, Math.floor(entry.sessions)),
-      tasks: Math.min(MAX_DAY_TASKS, Math.floor(entry.tasks)),
-    });
   }
   const finished: FinishedRecord[] = [];
   const finishedIds = new Set<number>();
@@ -333,7 +316,6 @@ function readLog(value: unknown): ProgressLog {
   }
   return {
     sessions: sessions.sort((a, b) => a.end - b.end),
-    legacy,
     ...(finished.length > 0 ? { finished } : {}),
   };
 }
@@ -343,9 +325,8 @@ const knownTaskSchema = z.object({ stamp: z.number(), sig: z.string(), sentDoneA
   .transform(({ sentDoneAt, ...known }) => (sentDoneAt != null ? { ...known, sentDoneAt } : known));
 
 /**
- * The link to an account. A record from the first build of accounts (no
- * `epoch` or `since`) is dropped, so the device links again with one full
- * read rather than trusting a shape the sync no longer uses.
+ * The link to an account. One without `uid`, `epoch` or `since` is dropped,
+ * so the device links again with one full read.
  */
 function readSyncMeta(value: unknown): SyncMeta | null {
   const base = readAs(syncBase, value, null);
@@ -359,7 +340,6 @@ function readSyncMeta(value: unknown): SyncMeta | null {
     epoch: Math.floor(base.epoch),
     since: Math.floor(base.since),
     sessions: validItems(z.string(), meta.sessions),
-    days: validItems(z.string(), meta.days),
     tasks: Object.fromEntries(validEntries(knownTaskSchema, meta.tasks)),
     tombs: Object.fromEntries(validEntries(z.number(), meta.tombs)),
     ...(checked != null ? { checked: Math.floor(checked) } : {}),

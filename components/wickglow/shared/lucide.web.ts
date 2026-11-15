@@ -1,13 +1,17 @@
 // Web: the same icons as `lucide.ts`, from `lucide-react` (plain SVG in the
 // page, no react-native-svg layer). Keep the two lists the same.
 export {
+  Bell,
   Calendar,
   ChartNoAxesColumn,
+  Check,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Download,
   Flame,
   Image,
+  Lock,
   Maximize,
   Music,
   Pause,
@@ -16,6 +20,7 @@ export {
   Repeat,
   RotateCcw,
   Settings,
+  Shield,
   SkipBack,
   SkipForward,
   SlidersVertical,

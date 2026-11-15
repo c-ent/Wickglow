@@ -140,4 +140,43 @@ describe('save queue', () => {
     expect(write).toHaveBeenCalledTimes(2);
     expect(write).toHaveBeenLastCalledWith(first);
   });
+
+  it('resolves a timer write with whether it was saved', async () => {
+    const write = jest.fn().mockResolvedValueOnce(false).mockResolvedValue(true);
+    const queue = createSaveQueue(write, 300, loaded);
+    await expect(queue.now({ n: 1 })).resolves.toBe(false);
+    await expect(queue.now({ n: 2 })).resolves.toBe(true);
+  });
+
+  it('drops a waiting retry when another tab\'s state is adopted', async () => {
+    const write = jest.fn().mockResolvedValueOnce(false).mockResolvedValue(true);
+    const queue = createSaveQueue(write, 300, loaded);
+    queue.now({ n: 1 });
+    await Promise.resolve();
+    queue.adopt({ n: 9 });
+    jest.advanceTimersByTime(60000);
+    expect(write).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a late failure of a write older than the adopted state', async () => {
+    let fail: (ok: boolean) => void = () => {};
+    const write = jest.fn().mockReturnValueOnce(new Promise<boolean>((resolve) => { fail = resolve; }));
+    const queue = createSaveQueue(write, 300, loaded);
+    queue.now({ n: 1 });
+    queue.adopt({ n: 9 });
+    fail(false);
+    await Promise.resolve();
+    jest.advanceTimersByTime(60000);
+    expect(write).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops a local edit waiting when another tab\'s state is adopted', () => {
+    const write = jest.fn();
+    const queue = createSaveQueue(write, 300, loaded);
+    queue.later({ n: 1 });
+    queue.adopt({ n: 9 });
+    jest.advanceTimersByTime(60000);
+    queue.flush();
+    expect(write).not.toHaveBeenCalled();
+  });
 });

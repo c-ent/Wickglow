@@ -67,10 +67,12 @@ export interface SessionRunPorts {
   show: (change: StageChange) => void;
   now: () => number;
   random: () => number;
+  /** False while starting is not allowed (a sign-out is under way). Starts are allowed when left out. */
+  canStart?: () => boolean;
 }
 
 export interface SessionRun {
-  /** Start, or resume from a pause. Does nothing while a session is running. */
+  /** Start, or resume from a pause. Does nothing while a session is running, or while `canStart` says no. */
   start: () => Promise<void>;
   pause: () => void;
   /** Pause when running, start otherwise. */
@@ -91,7 +93,7 @@ export interface SessionRun {
   restoreAlarm: () => () => void;
 }
 
-export function createSessionRun({ state, alarm, music, show, now, random }: SessionRunPorts): SessionRun {
+export function createSessionRun({ state, alarm, music, show, now, random, canStart = () => true }: SessionRunPorts): SessionRun {
   // The `endAt` already completed, so one session can never pay out twice.
   let handledEndAt: number | null = null;
 
@@ -99,7 +101,7 @@ export function createSessionRun({ state, alarm, music, show, now, random }: Ses
     const latest = state.get();
     // The commit below is in place before this function first waits, so a
     // double tap on Start finds the session already running and stops here.
-    if (latest.session.status === 'running') return;
+    if (latest.session.status === 'running' || !canStart()) return;
     const started = startSession(latest.session, now());
     show({ ending: null });
     // The clock and the music start now. The alarm work below is a chain of
@@ -155,7 +157,7 @@ export function createSessionRun({ state, alarm, music, show, now, random }: Ses
     const current = state.get();
     const nextMode = modeAfterSkip(current.session.mode, current.cycle);
     const duration = modeDurationMs(current.cfg, nextMode);
-    const keepRunning = current.session.status === 'running' && current.auto;
+    const keepRunning = current.session.status === 'running' && current.auto && canStart();
     const session = keepRunning
       ? startSession(idleSession(nextMode, duration), now())
       : idleSession(nextMode, duration);

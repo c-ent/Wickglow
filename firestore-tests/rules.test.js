@@ -30,12 +30,14 @@ setLogLevel('error');
 let env;
 const MINUTE = 60000;
 
-function session(end, minutes, extra = {}) {
-  return { id: `s_${end}-${minutes}`, data: { kind: 's', end, minutes, task: null, epoch: 0, at: serverTimestamp(), ...extra } };
+// A calendar key (`2026-11-3`) for a time, by its UTC date, as the rules read it.
+function keyOf(ms) {
+  const date = new Date(ms);
+  return `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()}`;
 }
 
-function day(extra = {}) {
-  return { kind: 'd', minutes: 30, sessions: 1, tasks: 0, epoch: 0, at: serverTimestamp(), ...extra };
+function session(end, minutes, extra = {}) {
+  return { id: `s_${end}-${minutes}`, data: { kind: 's', end, minutes, task: null, day: keyOf(end), epoch: 0, at: serverTimestamp(), ...extra } };
 }
 
 function task(extra = {}) {
@@ -142,12 +144,8 @@ describe('sessions', () => {
     await assertFails(setDoc(rec(alice(), 'alice', badTask.id), badTask.data));
   });
 
-  it('accepts the writer\'s day within 3 days of the end, and refuses any other', async () => {
+  it('accepts the writer\'s day within 3 days of the end, and refuses any other or none', async () => {
     const end = Date.now() - MINUTE;
-    const keyOf = (ms) => {
-      const date = new Date(ms);
-      return `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()}`;
-    };
     const DAY = 24 * 60 * MINUTE;
     // Its own day, and a day either side (a time zone far east or west).
     for (const [offset, shift] of [[0, 0], [1, -DAY], [2, DAY]]) {
@@ -162,6 +160,9 @@ describe('sessions', () => {
       const wrong = session(end - offset, 25, { day: bad });
       await assertFails(setDoc(rec(alice(), 'alice', wrong.id), wrong.data));
     }
+    const missing = session(end - 9, 25);
+    delete missing.data.day;
+    await assertFails(setDoc(rec(alice(), 'alice', missing.id), missing.data));
   });
 
   it('refuses an end time in the future', async () => {
@@ -187,19 +188,10 @@ describe('sessions', () => {
   });
 });
 
-describe('day records', () => {
-  it('accepts a day up to 1440 minutes and refuses more', async () => {
-    await assertSucceeds(setDoc(rec(alice(), 'alice', 'd_2026-11-3'), day({ minutes: 1440, sessions: 4, tasks: 2 })));
-    await assertFails(setDoc(rec(alice(), 'alice', 'd_2026-11-4'), day({ minutes: 1441 })));
-    await assertFails(setDoc(rec(alice(), 'alice', 'd_2026-11-5'), day({ sessions: 145 })));
-    await assertFails(setDoc(rec(alice(), 'alice', 'd_2026-11-6'), day({ minutes: -1 })));
-  });
-
-  it('refuses a bad day key and is create-only', async () => {
-    await assertFails(setDoc(rec(alice(), 'alice', 'd_yesterday'), day()));
-    const ref = rec(alice(), 'alice', 'd_2026-11-3');
-    await setDoc(ref, day());
-    await assertFails(setDoc(ref, day({ minutes: 1440 })));
+describe('day totals', () => {
+  it('refuses a day total record: progress is only sessions and tasks', async () => {
+    const total = { kind: 'd', minutes: 30, sessions: 1, tasks: 0, epoch: 0, at: serverTimestamp() };
+    await assertFails(setDoc(rec(alice(), 'alice', 'd_2026-11-3'), total));
   });
 });
 
@@ -286,7 +278,6 @@ describe('the reset count', () => {
     await assertFails(setDoc(rec(alice(), 'alice', missing.id), missing.data));
     const ahead = session(end, 25, { epoch: 1 });
     await assertFails(setDoc(rec(alice(), 'alice', ahead.id), ahead.data));
-    await assertFails(setDoc(rec(alice(), 'alice', 'd_2026-11-3'), day({ epoch: '0' })));
   });
 
   it('after a reset, refuses records from before it and accepts ones from after', async () => {
@@ -295,7 +286,6 @@ describe('the reset count', () => {
     const old = session(end, 25);
     await assertFails(setDoc(rec(alice(), 'alice', old.id), old.data));
     await assertFails(setDoc(rec(alice(), 'alice', 't_1'), task()));
-    await assertFails(setDoc(rec(alice(), 'alice', 'd_2026-11-3'), day()));
     const fresh = session(end, 25, { epoch: 1 });
     await assertSucceeds(setDoc(rec(alice(), 'alice', fresh.id), fresh.data));
     await assertSucceeds(setDoc(rec(alice(), 'alice', 't_1'), task({ epoch: 1 })));

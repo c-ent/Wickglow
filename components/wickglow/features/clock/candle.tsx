@@ -39,7 +39,6 @@ import { useWickglowClock } from '@/components/wickglow/logic';
  *   (`useAnimatedProps`) can only be animated on the UI thread through
  *   Reanimated. The flicker stretches the flame paths up from their base.
  */
-// `createAnimatedComponent` wraps an SVG Path so `animatedProps` can drive it.
 const AnimatedPath = Reanimated.createAnimatedComponent(Path);
 
 interface CandleProps {
@@ -71,7 +70,6 @@ export function SessionCandle(props: Omit<CandleProps, 'progress'>) {
 }
 
 export function Candle({ progress, lit, paused, idle, smoke, dimming, mode, mood, swap }: CandleProps) {
-  // `useAnimatedValue` is RN's Animated.Value kept stable across renders.
   const rise = useAnimatedValue(0); // entrance: slide up and fade in
   const hint = useAnimatedValue(0.35); // idle ring opacity
   const reduced = useReducedMotion();

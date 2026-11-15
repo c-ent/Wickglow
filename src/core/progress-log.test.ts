@@ -3,7 +3,6 @@ import {
   appendSession,
   emptyLog,
   hasProgress,
-  legacyFromHistory,
   logMinutes,
   rebuildProgress,
   sessionRecord,
@@ -22,7 +21,7 @@ describe('session records', () => {
     expect(sessionRecord(at(2026, 11, 3), 0)).toBeNull();
     expect(sessionRecord(at(2026, 11, 3), 181)).toBeNull();
     expect(sessionRecord(at(2026, 11, 3), 2.5)).toBeNull();
-    expect(sessionRecord(at(2026, 11, 3), 25)).toEqual({ id: `${at(2026, 11, 3)}-25`, end: at(2026, 11, 3), minutes: 25, task: null });
+    expect(sessionRecord(at(2026, 11, 3), 25)).toEqual({ id: `${at(2026, 11, 3)}-25`, end: at(2026, 11, 3), minutes: 25, task: null, d: '2026-11-3' });
     expect(sessionRecord(at(2026, 11, 3), 25, 7)?.task).toBe(7);
   });
 
@@ -31,16 +30,17 @@ describe('session records', () => {
     expect(sessionRecord(at(2026, 11, 3), 180)?.minutes).toBe(180);
   });
 
-  it('keeps the writer\'s day only when it is a calendar key within 3 days of the end', () => {
+  it('keeps the writer\'s day, and rejects a record whose day is missing or more than 3 days off', () => {
     const end = at(2026, 11, 3);
     expect(sessionRecord(end, 25, null, '2026-11-3')?.d).toBe('2026-11-3');
     expect(sessionRecord(end, 25, null, '2026-11-2')?.d).toBe('2026-11-2');
     expect(sessionRecord(end, 25, null, '2026-11-4')?.d).toBe('2026-11-4');
-    for (const bad of ['2026-11-9', '2026-10-28', 'today', 20261103, null, undefined]) {
-      const record = sessionRecord(end, 25, null, bad);
-      expect(record).not.toBeNull();
-      expect(record).not.toHaveProperty('d');
+    // Not real days, or not written the way `calendarKey` writes them.
+    for (const bad of ['2026-11-9', '2026-10-28', 'today', 20261103, null, '2026-11-03', '2026-10-32', '2026-11-0']) {
+      expect(sessionRecord(end, 25, null, bad)).toBeNull();
     }
+    // Creating a record without a day gives it this device's day of its end.
+    expect(sessionRecord(end, 25)?.d).toBe(calendarKey(end));
   });
 
   it('keeps a session once by id', () => {
@@ -48,20 +48,6 @@ describe('session records', () => {
     const once = appendSession(emptyLog(), record);
     expect(appendSession(once, record)).toBe(once);
     expect(once.sessions).toHaveLength(1);
-  });
-});
-
-describe('legacyFromHistory', () => {
-  it('turns days with progress into records and caps a day at 1440 minutes', () => {
-    const records = legacyFromHistory({
-      '2026-11-2': { d: '2026-11-2', minutes: 2000, sessions: 3, tasks: 1, claimed: ['q1'] },
-      '2026-11-3': { d: '2026-11-3', minutes: 0, sessions: 0, tasks: 0, claimed: [] },
-      '2026-11-1': { d: '2026-11-1', minutes: 30, sessions: 1, tasks: 0, claimed: [] },
-    });
-    expect(records).toEqual([
-      { d: '2026-11-1', minutes: 30, sessions: 1, tasks: 0 },
-      { d: '2026-11-2', minutes: 1440, sessions: 3, tasks: 1 },
-    ]);
   });
 });
 
@@ -124,27 +110,9 @@ describe('rebuildProgress', () => {
     expect(rebuildProgress(log, [], at(2026, 11, 4, 20)).streak).toEqual({ n: 2, last: '2026-11-4' });
   });
 
-  it('carries a streak across a month end and from day records into sessions', () => {
-    const log = appendSession(
-      { sessions: [], legacy: [{ d: '2026-10-31', minutes: 25, sessions: 1, tasks: 0 }] },
-      sessionRecord(at(2026, 11, 1), 25),
-    );
+  it('carries a streak across a month end', () => {
+    const log = appendSession(appendSession(emptyLog(), sessionRecord(at(2026, 10, 31), 25)), sessionRecord(at(2026, 11, 1), 25));
     expect(rebuildProgress(log, [], at(2026, 11, 1, 20)).streak).toEqual({ n: 2, last: '2026-11-1' });
-  });
-
-  it('counts a migrated day once, and a finish after the migration on top of it', () => {
-    // The old save counted 2 tasks that day: task 1 (still in the list) and one
-    // deleted before records existed.
-    const history = { '2026-11-3': { d: '2026-11-3', minutes: 0, sessions: 0, tasks: 2, claimed: ['q3'] } };
-    const tasks = [task(1, '2026-11-3')];
-    const legacy = legacyFromHistory(history, tasks);
-    expect(legacy).toEqual([{ d: '2026-11-3', minutes: 0, sessions: 0, tasks: 1 }]);
-    const log = { sessions: [], legacy };
-    expect(rebuildProgress(log, tasks, at(2026, 11, 3, 20)).day.tasks).toBe(2);
-    // A task finished after the migration adds to the day.
-    expect(rebuildProgress(log, [...tasks, task(2, '2026-11-3')], at(2026, 11, 3, 20)).day.tasks).toBe(3);
-    // Reopening the migrated task lowers it; the deleted one stays counted.
-    expect(rebuildProgress(log, [], at(2026, 11, 3, 20)).day.tasks).toBe(1);
   });
 
   it('counts a deleted finished task on the day it was finished, and each task once', () => {
@@ -169,7 +137,7 @@ describe('rebuildProgress', () => {
 
 describe('summaries', () => {
   it('counts minutes and tells empty from not', () => {
-    const log = appendSession({ sessions: [], legacy: [{ d: '2026-11-1', minutes: 30, sessions: 1, tasks: 0 }] }, sessionRecord(at(2026, 11, 3), 25));
+    const log = appendSession(appendSession(emptyLog(), sessionRecord(at(2026, 11, 1), 30)), sessionRecord(at(2026, 11, 3), 25));
     expect(logMinutes(log)).toBe(55);
     expect(hasProgress(emptyLog(), [])).toBe(false);
     expect(hasProgress(emptyLog(), [task(1, null)])).toBe(true);

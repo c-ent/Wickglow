@@ -12,7 +12,10 @@ import 'react-native-reanimated';
 export default function RootLayout() {
   useEffect(() => {
     if (Platform.OS === 'web') {
-      document.title = 'Wickglow';
+      // A page that sets its own title (the landing page at `/`) keeps it.
+      if (!document.title) {
+        document.title = 'Wickglow';
+      }
       installWebScrollbar();
       installWebInputZoomGuard();
       return;
@@ -27,6 +30,8 @@ export default function RootLayout() {
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bgBase } }}>
         <Stack.Screen name="index" options={{ title: 'Wickglow' }} />
+        <Stack.Screen name="app" options={{ title: 'Wickglow' }} />
+        <Stack.Screen name="download" options={{ title: 'Download Wickglow' }} />
       </Stack>
     </KeyboardProvider>
   );

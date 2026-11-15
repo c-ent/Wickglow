@@ -4,6 +4,7 @@ import {
   isCompleteDownload,
   localFileName,
   remoteScenesEnabled,
+  retiredSceneNames,
   remoteUrl,
 } from './remote-scenes';
 
@@ -54,6 +55,21 @@ describe('localFileName', () => {
 
   it('never returns an empty name', () => {
     expect(localFileName({ path: '..', bytes: 1 })).toBe('scene');
+  });
+});
+
+describe('retiredSceneNames', () => {
+  it('lists downloads no scene uses, and keeps the rest', () => {
+    const present = ['v1_videos_frog_lily_pond.mp4', 'v1_videos_night_hills.mp4', 'v1_videos_cyberpunk_desk.mp4'];
+    expect(retiredSceneNames(present, [frog])).toEqual(['v1_videos_night_hills.mp4', 'v1_videos_cyberpunk_desk.mp4']);
+  });
+
+  it('leaves part files to their own clean-up', () => {
+    expect(retiredSceneNames(['v1_videos_old.mp4.part'], [frog])).toEqual([]);
+  });
+
+  it('keeps everything when every download is in use', () => {
+    expect(retiredSceneNames(['v1_videos_frog_lily_pond.mp4'], [frog])).toEqual([]);
   });
 });
 

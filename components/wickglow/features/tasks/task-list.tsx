@@ -11,7 +11,7 @@ import { CalendarIcon, ChevronIcon, CloseIcon, PencilIcon, TargetIcon, TrashIcon
  * title or the target icon to focus it, edit, delete, and open its subtasks.
  *
  * This file only DISPLAYS tasks and sends actions to the context
- * (`lamp.addTask`, `lamp.toggleTask`, ...). The rules (checking the last
+ * (`addTask`, `toggleTask`, ...). The rules (checking the last
  * subtask checks the parent, only the parent counts for the daily quest, ...)
  * live in src/core/tasks.ts. Its UI-only state is: the draft text/date, which
  * row is being edited, and the subtask drafts.
@@ -24,8 +24,7 @@ const dueFormatter = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
 });
 
-// hitSlop grows the tappable area of small icon buttons past their drawn size,
-// so they're easier to hit with a thumb without changing the layout.
+// Small icon buttons get a larger tap area than they draw.
 const iconSlop = { top: 10, bottom: 10, left: 6, right: 6 };
 
 // Web only: style for the invisible <input type="date">. React Native has no
@@ -175,7 +174,7 @@ function DueControl({
 
 // A hand-drawn checkbox (React Native has none). The tick is a View with two
 // borders rotated 45deg. `small` is the subtask size.
-function CheckBox({ on, accent, label, small = false, onPress }: {
+export function CheckBox({ on, accent, label, small = false, onPress }: {
   on: boolean;
   accent: string;
   label: string;
@@ -202,7 +201,7 @@ function CheckBox({ on, accent, label, small = false, onPress }: {
 
 // The target beside a task title. It marks the focused task, so the state is
 // visible as a control rather than only through the row's tint.
-function FocusButton({ on, accent, label, onPress }: {
+export function FocusButton({ on, accent, label, onPress }: {
   on: boolean;
   accent: string;
   label: string;
@@ -243,7 +242,6 @@ function IconButton({ label, onPress, children }: {
 
 export function TaskList({ mobile = false }: { mobile?: boolean }) {
   const lamp = useWickglow();
-  // Actions never change identity, so they are pulled out once (see logic.tsx).
   const { addTask, addSubtask, renameTask, setTaskDate, setTaskOpen, removeTask, toggleTask, focusTask } = lamp;
   const tone = useTone(mobile);
   const [text, setText] = useState(''); // new-task title being typed
@@ -332,9 +330,10 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
             const overdue = isOverdue(task.date, lamp.now);
             // "Active" = the task the timer's sessions count toward.
             const active = lamp.activeTask?.id === task.id && !task.done;
-            // Date, subtasks, focus, edit and delete.
+            // Date, subtasks, focus, edit and delete. One group, so on a narrow
+            // phone it moves under the title as a whole instead of squeezing it.
             const controls = (
-              <>
+              <View style={styles.controls}>
                 {task.done ? null : (
                   <DueControl
                     value={task.date ?? ''}
@@ -381,7 +380,7 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
                 <IconButton label={`Delete ${task.text}`} onPress={() => removeTask(task.id)}>
                   <TrashIcon size={14} color={fade(colors.textPrimary, 0.45)} />
                 </IconButton>
-              </>
+              </View>
             );
             return (
               <View
@@ -391,7 +390,9 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
                   active ? { borderColor: fade(accent, 0.7), backgroundColor: fade(accent, 0.07) } : null,
                 ]}
               >
-                <View style={styles.row}>
+                {/* On a phone or tablet the title keeps a usable width: when the
+                    row is too narrow for it and the controls, they wrap under it. */}
+                <View style={[styles.row, mobile ? styles.rowWrap : null]}>
                   <CheckBox
                     on={task.done}
                     accent={accent}
@@ -414,7 +415,7 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
                         if (event.nativeEvent.key === 'Enter') commitEdit(task.id, editValue.current, true);
                         if (event.nativeEvent.key === 'Escape') commitEdit(task.id, '', false);
                       }}
-                      style={styles.edit}
+                      style={[styles.edit, mobile ? styles.titleRoom : null]}
                     />
                   ) : (
                     <Pressable
@@ -423,10 +424,9 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
                       accessibilityLabel={active ? `Stop focusing on ${task.text}` : `Focus on ${task.text}`}
                       disabled={task.done}
                       onPress={() => focusTask(task.id)}
-                      style={styles.titleBtn}
+                      style={[styles.titleBtn, mobile ? styles.titleRoom : null]}
                     >
-                      {/* On a phone or tablet the title wraps (up to 3 lines)
-                          so the date and buttons can stay on the same row. */}
+                      {/* On a phone or tablet the title wraps (up to 3 lines). */}
                       <Text style={[styles.title, task.done ? styles.done : null]} numberOfLines={mobile ? 3 : 1}>{task.text}</Text>
                     </Pressable>
                   )}
@@ -511,6 +511,9 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
+// Shared with the web landing page (components/landing), which draws sample rows with the same styles.
+export { styles as taskListStyles };
+
 const styles = StyleSheet.create({
   add: {
     flexDirection: 'row',
@@ -594,6 +597,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingLeft: 12,
     paddingRight: 6,
+  },
+  rowWrap: {
+    flexWrap: 'wrap',
+    rowGap: 4,
+  },
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 'auto',
+  },
+  // The narrowest a title (or its edit field) gets before the controls wrap.
+  titleRoom: {
+    minWidth: 120,
   },
   check: {
     width: 20,

@@ -11,8 +11,8 @@ const DEFAULT_SOURCE: number = require('../../../../assets/backgrounds/videos/27
  * gradient. It plays only while the app is in the foreground and the system is
  * not asking for reduced motion (then it holds the first frame), so it costs
  * nothing on a locked screen. It has no audio and ignores touches.
- * `onReady` fires once the first frame is on screen, so a crossfade can wait
- * for it instead of fading in a black box.
+ * `onReady` fires once the first frame is on screen, so the swap in
+ * crossfade.tsx can wait for it instead of showing a black box.
  */
 export function VideoBackground({ source = DEFAULT_SOURCE, onReady }: { source?: number | string; onReady?: () => void }) {
   const reduced = useReducedMotion();
@@ -60,9 +60,9 @@ export function VideoBackground({ source = DEFAULT_SOURCE, onReady }: { source?:
         player={player}
         style={styles.video}
         contentFit="cover"
-        // Android's default SurfaceView ignores a parent's opacity, so the
-        // crossfade would pop instead of fade. TextureView honours it. The prop
-        // is Android-only and ignored elsewhere.
+        // Android's default SurfaceView ignores a parent's opacity, so a video
+        // still loading in crossfade.tsx's hidden layer (opacity 0) would show
+        // through. TextureView honours it. The prop is Android-only.
         surfaceType="textureView"
         nativeControls={false}
         allowsPictureInPicture={false}

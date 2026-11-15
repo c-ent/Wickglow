@@ -58,6 +58,12 @@ export const CalendarIcon = stroked(Lucide.Calendar, 16);
 export const PencilIcon = stroked(Lucide.PenLine, 15);
 export const ChevronIcon = stroked(Lucide.ChevronRight, 12);
 export const UserIcon = stroked(Lucide.User, 18);
+// Used by the web landing page (components/landing).
+export const BellIcon = stroked(Lucide.Bell);
+export const LockIcon = stroked(Lucide.Lock);
+export const ShieldIcon = stroked(Lucide.Shield);
+export const CheckIcon = stroked(Lucide.Check, 14);
+export const ChevronLeftIcon = stroked(Lucide.ChevronLeft, 22);
 
 export const PlayIcon = filled(Lucide.Play, 18, colors.textInverse);
 export const PauseIcon = filled(Lucide.Pause, 18, colors.textInverse);

@@ -7,18 +7,12 @@ import { countsAsRewardSession, focusSessionXp } from './xp';
 
 // The record that progress is built from, so two devices can be combined.
 //
-// Each finished focus session is one `SessionRecord`, kept once by its id.
-// Progress from before records existed is one `DayRecord` per day (the daily
-// totals the device already had). XP, streak and the per-day history are
-// worked out from these by `rebuildProgress`, never stored as editable totals
-// in the account. This is the sync model the owner chose on 2026-11-13.
+// Each finished focus session is one `SessionRecord`, kept once by its id. XP,
+// streak and the per-day history are worked out from these and the finished
+// tasks by `rebuildProgress`, never stored as editable totals in the account.
 
 /** The longest focus a record may hold, matching the Firestore rules. */
 export const MAX_RECORD_MINUTES = 180;
-/** The most minutes one day record may hold: a whole day. */
-export const MAX_DAY_MINUTES = 1440;
-/** The most tasks one day record may hold, matching the rules. */
-export const MAX_DAY_TASKS = 500;
 
 export interface SessionRecord {
   /** `${end}-${minutes}`: the same finish gives the same id, so it is kept once. */
@@ -31,33 +25,18 @@ export interface SessionRecord {
   /**
    * The local day the session was finished on, on the device that finished
    * it (`calendarKey` format). Every device files the session on this day, so
-   * devices in different time zones agree (owner, 2026-11-14). Missing on
-   * records from before it existed: those are filed by the reader's clock.
+   * devices in different time zones agree.
    */
-  d?: string;
+  d: string;
 }
 
 const DAY_KEY = /^\d{4}-\d{1,2}-\d{1,2}$/;
 /** How far a session's day may sit from its end time: time zones span 26 hours. */
 const MAX_DAY_DRIFT_MS = 3 * 24 * 60 * 60 * 1000;
 
-/** The day a session counts on: the writer's day, else this device's day of its end. */
-export function sessionDay(record: SessionRecord): string {
-  return record.d ?? calendarKey(record.end);
-}
-
-export interface DayRecord {
-  /** Local calendar key, `calendarKey` format (`2026-11-3`). */
-  d: string;
-  minutes: number;
-  /** Sessions of at least 10 minutes. */
-  sessions: number;
-  tasks: number;
-}
-
 /**
  * A finished top-level task that was then deleted. Deleting a finished task
- * keeps its credit (owner, 2026-11-14), so the day it was finished keeps its
+ * keeps its credit, so the day it was finished keeps its
  * count. Reopening a task still takes the credit back: it is no longer done.
  */
 export interface FinishedRecord {
@@ -68,13 +47,12 @@ export interface FinishedRecord {
 
 export interface ProgressLog {
   sessions: SessionRecord[];
-  legacy: DayRecord[];
-  /** Deleted finished tasks. Missing in saves from before it existed. */
+  /** Deleted finished tasks. Left out when there are none. */
   finished?: FinishedRecord[];
 }
 
 export function emptyLog(): ProgressLog {
-  return { sessions: [], legacy: [] };
+  return { sessions: [] };
 }
 
 export function sessionRecordId(end: number, minutes: number): string {
@@ -83,17 +61,17 @@ export function sessionRecordId(end: number, minutes: number): string {
 
 /**
  * A focus session as a record, or null when it cannot be one (under a minute,
- * or too long). `d` is the day it was finished on where it was finished; a day
- * that is not a calendar key, or is more than three days from `end`, is left
- * out, and the session is then filed by the reader's clock.
+ * too long, or `d` is not a calendar key within three days of `end`). `d` is
+ * the day it was finished on where it was finished; left out, it is this
+ * device's day of `end`. A reader passes the stored day, so a stored record
+ * without one is rejected rather than given this device's day.
  */
-export function sessionRecord(end: number, minutes: number, task: number | null = null, d: unknown = null): SessionRecord | null {
+export function sessionRecord(end: number, minutes: number, task: number | null = null, d: unknown = calendarKey(end)): SessionRecord | null {
   if (!Number.isInteger(end) || end <= 0) return null;
   if (!Number.isInteger(minutes) || minutes < 1 || minutes > MAX_RECORD_MINUTES) return null;
+  if (typeof d !== 'string' || !isDayKey(d) || Math.abs(noonOf(d) - end) > MAX_DAY_DRIFT_MS) return null;
   const focused = typeof task === 'number' && Number.isSafeInteger(task) ? task : null;
-  const record: SessionRecord = { id: sessionRecordId(end, minutes), end, minutes, task: focused };
-  if (typeof d === 'string' && DAY_KEY.test(d) && Math.abs(noonOf(d) - end) <= MAX_DAY_DRIFT_MS) record.d = d;
-  return record;
+  return { id: sessionRecordId(end, minutes), end, minutes, task: focused, d };
 }
 
 /**
@@ -143,37 +121,9 @@ export function appendSession(log: ProgressLog, record: SessionRecord | null): P
   return { ...log, sessions: [...log.sessions, record].sort((a, b) => a.end - b.end) };
 }
 
-/**
- * The device's daily totals as day records, for a save from before records
- * existed. Minutes are capped at a whole day, as the rules cap them. A day's
- * task count leaves out the finished tasks still in `tasks`: those are counted
- * from the tasks themselves, so a day record holds only finishes no task shows
- * any more, and the rebuild adds the two (a later finish or reopen then moves
- * the total, and nothing is counted twice).
- */
-export function legacyFromHistory(days: DayHistory, tasks: Task[] = []): DayRecord[] {
-  const live: Record<string, number> = {};
-  for (const task of tasks) {
-    if (task.parentId != null || !task.done || !task.doneOn) continue;
-    live[task.doneOn] = (live[task.doneOn] ?? 0) + 1;
-  }
-  const records: DayRecord[] = [];
-  for (const day of Object.values(days)) {
-    const extraTasks = Math.max(0, Math.floor(day.tasks) - (live[day.d] ?? 0));
-    if (day.minutes <= 0 && day.sessions <= 0 && extraTasks <= 0) continue;
-    records.push({
-      d: day.d,
-      minutes: Math.min(MAX_DAY_MINUTES, Math.max(0, Math.floor(day.minutes))),
-      sessions: Math.min(MAX_DAY_MINUTES / 10, Math.max(0, Math.floor(day.sessions))),
-      tasks: Math.min(MAX_DAY_TASKS, extraTasks),
-    });
-  }
-  return records.sort((a, b) => dayOrder(a.d) - dayOrder(b.d));
-}
-
 /** True when the log or the task list holds anything worth keeping. */
 export function hasProgress(log: ProgressLog, tasks: Task[]): boolean {
-  return log.sessions.length > 0 || log.legacy.length > 0 || (log.finished?.length ?? 0) > 0 || tasks.length > 0;
+  return log.sessions.length > 0 || (log.finished?.length ?? 0) > 0 || tasks.length > 0;
 }
 
 export interface RebuiltProgress {
@@ -185,9 +135,8 @@ export interface RebuiltProgress {
 
 /**
  * XP, streak and the day history, worked out from the log and the tasks.
- * A day's task count is its day record (finishes from before records that no
- * task shows, see `legacyFromHistory`) plus the top-level tasks finished that
- * day (live ones, and deleted ones in `log.finished`).
+ * A day's task count is the top-level tasks finished that day (live ones, and
+ * deleted ones in `log.finished`).
  * Quests are claimed on any day that reached them. The streak walks the days
  * with at least one 10-minute session in order.
  */
@@ -197,14 +146,8 @@ export function rebuildProgress(log: ProgressLog, tasks: Task[], now: number): R
     if (!days[d]) days[d] = { d, sessions: 0, minutes: 0, tasks: 0, claimed: [] };
     return days[d];
   };
-  for (const record of log.legacy) {
-    const day = at(record.d);
-    day.minutes += record.minutes;
-    day.sessions += record.sessions;
-    day.tasks += record.tasks;
-  }
   for (const record of log.sessions) {
-    const day = at(sessionDay(record));
+    const day = at(record.d);
     day.minutes += record.minutes;
     if (countsAsRewardSession(record.minutes)) day.sessions += 1;
   }
@@ -239,6 +182,15 @@ export function rebuildProgress(log: ProgressLog, tasks: Task[], now: number): R
   return { xp, streak, days, day: days[today] };
 }
 
+/**
+ * True for a real day written the way `calendarKey` writes it. "2026-2-31"
+ * matches the pattern but rolls over to March, and "2026-02-03" is padded,
+ * so neither is the key the day is filed under.
+ */
+function isDayKey(d: string): boolean {
+  return DAY_KEY.test(d) && calendarKey(noonOf(d)) === d;
+}
+
 /** Local noon of a calendar key, so a DST hour cannot move it to another day. */
 function noonOf(d: string): number {
   const [year, month, day] = d.split('-').map(Number);
@@ -251,7 +203,6 @@ function dayOrder(d: string): number {
 
 /** Total focus minutes in the log, for the merge choice. */
 export function logMinutes(log: ProgressLog): number {
-  return log.legacy.reduce((sum, day) => sum + day.minutes, 0)
-    + log.sessions.reduce((sum, record) => sum + record.minutes, 0);
+  return log.sessions.reduce((sum, record) => sum + record.minutes, 0);
 }
 

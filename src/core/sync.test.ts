@@ -1,3 +1,4 @@
+import { calendarKey } from './calendar';
 import { emptyLog, ProgressLog, SessionRecord } from './progress-log';
 import {
   adoptRemote,
@@ -29,11 +30,11 @@ function tomb(id: number, updatedAt: number, doneOn: string | null = null): Remo
 }
 
 function session(end: number, minutes = 25): SessionRecord {
-  return { id: `${end}-${minutes}`, end, minutes, task: null };
+  return { id: `${end}-${minutes}`, end, minutes, task: null, d: calendarKey(end) };
 }
 
 function log(sessions: SessionRecord[] = []): ProgressLog {
-  return { sessions, legacy: [] };
+  return { sessions };
 }
 
 function remote(extra: Partial<RemoteProgress>): RemoteProgress {
@@ -78,12 +79,6 @@ describe('sessions and day records', () => {
     expect(result.meta.since).toBe(9);
   });
 
-  it('pushes day records once and keeps the account copy on a clash', () => {
-    const local = { log: { sessions: [], legacy: [{ d: '2026-11-1', minutes: 30, sessions: 1, tasks: 0 }, { d: '2026-11-2', minutes: 5, sessions: 0, tasks: 0 }] }, tasks: [] };
-    const result = reconcile(local, emptyMeta('u1'), remote({ legacy: [{ d: '2026-11-2', minutes: 60, sessions: 2, tasks: 1 }] }), NOW, true);
-    expect(result.push.days.map((day) => day.d)).toEqual(['2026-11-1']);
-    expect(result.log.legacy.find((day) => day.d === '2026-11-2')?.minutes).toBe(60);
-  });
 });
 
 describe('tasks', () => {
@@ -349,7 +344,6 @@ describe('first sign-in, resets and quiet runs', () => {
   it('adopts the account copy, its reset count and its newest time', () => {
     const copy = remote({
       sessions: [session(2000), session(1000)],
-      legacy: [{ d: '2026-11-1', minutes: 30, sessions: 1, tasks: 0 }],
       tasks: [remoteTask(task(1), 100), tomb(2, 100)],
       epoch: 3,
       latest: 777,

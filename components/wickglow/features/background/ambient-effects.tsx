@@ -20,8 +20,7 @@ import { RainOverlay, rand } from './rain';
  * effect follows its slider the way the rain does: nothing at zero, more (or
  * brighter) as it goes up, never in the way of a tap. They are kept sparse so
  * several together stay calm. Clock, Brown noise, Keyboard and Cafe have no
- * effect (owner, 2026-11-14): nothing natural to draw. Wind had streaks in
- * gusts; the owner removed them the same day.
+ * effect: nothing natural to draw.
  *
  * Back to front: tide (waves), fire glow and embers, fireflies (forest), rain.
  *
@@ -159,8 +158,7 @@ function Ember({ index, progress, height, width, reduced }: Particle) {
 
 // ---------------------------------------------------------------------------
 // Forest: fireflies, small soft dots wandering in the lower part of the
-// screen and slowly glowing on and off. 8 at the lightest, 28 at full (owner
-// doubled them, 2026-11-14).
+// screen and slowly glowing on and off. 8 at the lightest, 28 at full.
 
 const FLY_TURN = 24000;
 const FLY_BOX = 12;

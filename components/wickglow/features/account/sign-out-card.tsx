@@ -8,7 +8,7 @@ import { cardStyles as styles } from './account-card-styles';
 export const UNSAVED_SIGN_OUT_TEXT = "Some progress isn't saved to your account yet. Signing out removes it from this device.";
 
 /**
- * Signing out clears the progress from this device (owner, 2026-11-14). When
+ * Signing out clears the progress from this device. When
  * all of it is in the account, sign-out is immediate and this never shows.
  * Otherwise it shows "Saving" for a moment while the rest goes up, signs out
  * by itself if that works, and else warns, with Cancel as the main choice.

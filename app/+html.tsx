@@ -1,3 +1,4 @@
+import { RETURNING_VISITOR_SCRIPT } from '@/components/landing/returning-visitor';
 import { colors } from '@/src/theme/tokens';
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 import { type PropsWithChildren } from 'react';
@@ -7,8 +8,7 @@ import { type PropsWithChildren } from 'react';
 // `headNodes` and `bodyNodes` are what Expo adds to every page: the app's
 // script tags, styles and fonts. They must be rendered here, as Expo's own
 // default shell does. Without them the exported page has no scripts, never
-// starts, and stays on the dark loading screen (the black screen of
-// 2026-11-13, from when this file was added in ba5822c).
+// starts, and stays on the dark loading screen.
 //
 // `interactive-widget=resizes-content`: when the on-screen keyboard opens, the
 // browser shrinks the page to the space above it instead of sliding the
@@ -28,6 +28,8 @@ export default function Root({ children }: PropsWithChildren) {
           name="viewport"
           content="width=device-width, initial-scale=1, shrink-to-fit=no, interactive-widget=resizes-content"
         />
+        {/* First in <head>: a returning visitor on `/` goes to /app before the landing page draws. */}
+        <script dangerouslySetInnerHTML={{ __html: RETURNING_VISITOR_SCRIPT }} />
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: `body { background-color: ${colors.bgBase}; }` }} />
         {headNodes}

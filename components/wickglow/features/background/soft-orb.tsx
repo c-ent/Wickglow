@@ -18,7 +18,7 @@ export const ORB_BLUR = 70;
 export const ORB_PAD = ORB_BLUR * 2;
 
 // Where the orb sits, as position offsets (px, or % for left/top) from the
-// scene edges. Same idea as CSS absolute positioning.
+// scene edges.
 export type OrbPlace = {
   left?: number | `${number}%`;
   top?: number | `${number}%`;

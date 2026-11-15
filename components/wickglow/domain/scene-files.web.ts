@@ -12,6 +12,9 @@ export function sceneFileUri(file: RemoteFile): string | null {
   return remoteUrl(file, SCENE_WEB_PATH);
 }
 
+/** Nothing is downloaded on web, so there is nothing to remove. */
+export function removeRetiredSceneFiles(): void {}
+
 /** Never called on web, since nothing is downloaded. */
 export async function downloadSceneFile(): Promise<void> {
   throw new Error('Scenes are streamed on web');
