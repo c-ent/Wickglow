@@ -27,9 +27,10 @@ The order was updated on 2026-11-03 and is recorded in `progress.md`. #1, #4 and
 | 9   | Optional cosmetics or one-time purchase | —       | Out (owner, 2026-11-10)     | —                                                         |
 | 6   | Study pets                              | —       | Out                         | v1 (server drops after #5)                                |
 | 7   | Achievements                            | —       | Out                         | —                                                         |
-| 5   | Accounts and sync                       | v2      | Current: built 2026-11-13, owner tasks and device checks left | —                                                         |
+| 5   | Accounts and sync                       | v2      | Shipped 2026-11-15 (owner checked two devices) | —                                                         |
 | 10  | Private circles (friends' candles)      | —       | Out (owner, 2026-11-10)     | —                                                         |
 | 11  | Focus rooms                             | —       | Out (owner, 2026-11-10)     | —                                                         |
+| 12  | Landing page                            | v2      | Current (owner, 2026-11-15) | Web build, APK on Google Drive, C1 cleared                |
 
 #1, #4 and #8 have shipped. #2 and #3 were removed. #6 and #7 are out. #9, #10 and #11 were dropped by the owner on 2026-11-10; their sections below are history only. #5 was dropped on 2026-11-10 and brought back on 2026-11-13 as the current feature.
 
@@ -106,6 +107,22 @@ Terms read 2026-11-03, before the code:
 Shipped: paste a public link. The save stores the link and the service name. The music panel splits Tracks and Streaming, and adding a link opens that service's player immediately. Spotify, YouTube, and Apple Music show that service's player on the scene, so it keeps playing when the panel closes or the ambient mixer opens. The player keeps its default height and cannot be collapsed; the owner removed Minimize on 2026-11-07. On the web, Spotify and Apple Music keep playing in a hidden browser tab. YouTube's frame still leaves when the page is hidden, and on Android and iOS every embed still leaves when the app leaves the screen. YouTube Music opens. Starting an embed pauses the local `expo-audio` player, and closing it can resume. A private or unrecognized link fails with a short message. If the embed cannot play on Android, the player shows an "Open link" button and never opens the service app on its own (changed 2026-11-11). Session-end volume and fade stay on the local player. The timer, XP, and quests stay on the session clock. Pure parsing is in `src/core/stream-links.ts`.
 
 Open questions: whether links can be shared in rooms. The privacy-policy line Spotify's widget terms ask for, before release.
+
+### 12. Landing page — current (added by the owner 2026-11-15)
+
+Source: the owner, for the portfolio link and ahead of the Play listing.
+
+Decided 2026-11-15:
+
+- On the web, `/` is the landing page (`app/index.web.tsx`, UI in `components/landing/`) and the web app is at `/app` (`app/app.tsx`). On Android and iOS, `/` stays the app (`app/index.tsx`). A visitor who has used the web app before is sent from `/` to `/app` by a script in the page head (`components/landing/returning-visitor.ts`); `/?home` shows the landing page anyway. `/download`, the first address, redirects to `/` (owner, 2026-11-15). The web build uses `"output": "static"`, so each route is pre-rendered to a static HTML page and reuses the theme tokens and fonts.
+- The app stays at `/` and visitors are not redirected to the landing page; it is the page to link to (portfolio, posts, the Play listing's website field).
+- The main button downloads the Android APK, hosted on the owner's Google Drive at first. Until the owner sends the link, `APK_URL` in `components/landing/content.ts` is a placeholder.
+- It goes live before the Google Play badge exists. When the Play listing is live, the badge is added and the APK button can be dropped or kept.
+- Screenshots: three desktop shots in one swipeable gallery ("See it in action") inside a Mac-style window (title bar with three dots, no address bar, arrows, dots), the window the same shape as the screenshots (1920 x 911), Moonlit first (`GALLERY` in `content.ts`). The phone shot sits beside the Android download in the download card (`PHONE_SHOT`). WebP files are in `assets/landing/`.
+
+Design: the owner's mockup (2026-11-15). A near-black violet page with Amber glows and the flame colour as the only accent. Nav (Features, Android, Open the app); hero "Get the work done." with four floating sample widgets (timer, level, streak, ambient mix; sample numbers, drawn only on windows 1180 wide or more); a slim promise bar (Free, no ads or tracking, no account needed, no harsh alarm); a screenshot section; a "What's inside" bento grid whose pictures are the app's own components fed sample values (`components/landing/app-pieces.tsx`: `Candle`, `LevelCardView`, the task row pieces, the mixer styles, `DayCell`; the app exports `CheckBox`, `FocusButton`, `taskListStyles`, `DayCell` and `LevelCardView` for this); a download card; footer links to `/privacy`, `/delete-account` and the GitHub repo. Page-only colours are in `components/landing/palette.ts`; the rest come from the tokens.
+
+Blocks a public launch: C1 in `docs/issues.md`. The unconfirmed videos are served from the website to both the web app and the APK.
 
 ## v3 (dropped)
 

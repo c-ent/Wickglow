@@ -152,7 +152,7 @@ export function MonthCalendar({ mobile = false, wide: desk = false }: { mobile?:
 
 // One square in the grid. Its fill darkens with the day's minutes (4 steps).
 // `onPress` is undefined for future days so they can't be selected.
-function DayCell({
+export function DayCell({
   cell,
   accent,
   selected,

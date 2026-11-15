@@ -41,7 +41,10 @@ Test on a development build, not Expo Go. Background audio and notifications beh
 ## The shape of the code
 
 ```
-app/                    Expo Router routes. Thin: render WickglowScreen.
+app/                    Expo Router routes. Thin: index renders WickglowScreen, download renders LandingPage
+components/landing/     The web landing page at / (web only); the web app is at /app
+  content.ts            APK link, screenshots and copy. Change links and text here
+  app-pieces.tsx        The "What's inside" pictures, drawn by the app's own components with sample values
 components/wickglow/
   wickglow-screen.tsx   Public entry, picks the layout
   logic.tsx             The provider: state, actions, two contexts

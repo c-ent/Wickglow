@@ -200,6 +200,9 @@ export function AccountRow({ mobile = false, wide: desk = false }: { mobile?: bo
   );
 }
 
+// Shared with the web landing page (components/landing), which draws a sample row with the same styles.
+export { styles as accountRowStyles };
+
 const styles = StyleSheet.create({
   card: {
     borderColor: colors.border,

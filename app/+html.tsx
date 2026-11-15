@@ -1,3 +1,4 @@
+import { RETURNING_VISITOR_SCRIPT } from '@/components/landing/returning-visitor';
 import { colors } from '@/src/theme/tokens';
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 import { type PropsWithChildren } from 'react';
@@ -28,6 +29,8 @@ export default function Root({ children }: PropsWithChildren) {
           name="viewport"
           content="width=device-width, initial-scale=1, shrink-to-fit=no, interactive-widget=resizes-content"
         />
+        {/* First in <head>: a returning visitor on `/` goes to /app before the landing page draws. */}
+        <script dangerouslySetInnerHTML={{ __html: RETURNING_VISITOR_SCRIPT }} />
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: `body { background-color: ${colors.bgBase}; }` }} />
         {headNodes}

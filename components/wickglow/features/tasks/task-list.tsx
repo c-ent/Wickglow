@@ -175,7 +175,7 @@ function DueControl({
 
 // A hand-drawn checkbox (React Native has none). The tick is a View with two
 // borders rotated 45deg. `small` is the subtask size.
-function CheckBox({ on, accent, label, small = false, onPress }: {
+export function CheckBox({ on, accent, label, small = false, onPress }: {
   on: boolean;
   accent: string;
   label: string;
@@ -202,7 +202,7 @@ function CheckBox({ on, accent, label, small = false, onPress }: {
 
 // The target beside a task title. It marks the focused task, so the state is
 // visible as a control rather than only through the row's tint.
-function FocusButton({ on, accent, label, onPress }: {
+export function FocusButton({ on, accent, label, onPress }: {
   on: boolean;
   accent: string;
   label: string;
@@ -510,6 +510,9 @@ export function TaskList({ mobile = false }: { mobile?: boolean }) {
     </View>
   );
 }
+
+// Shared with the web landing page (components/landing), which draws sample rows with the same styles.
+export { styles as taskListStyles };
 
 const styles = StyleSheet.create({
   add: {

@@ -2,14 +2,19 @@
 // iOS. The web build takes `lucide.web.ts` (the same names from
 // `lucide-react`) instead. Chosen in AGENTS.md (Icons row).
 export {
+  Bell,
   Calendar,
   ChartNoAxesColumn,
+  Check,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Download,
   Flame,
   Image,
+  Lock,
   Maximize,
+  MonitorSmartphone,
   Music,
   Pause,
   PenLine,
@@ -17,6 +22,7 @@ export {
   Repeat,
   RotateCcw,
   Settings,
+  Shield,
   SkipBack,
   SkipForward,
   SlidersVertical,
@@ -28,5 +34,6 @@ export {
   Upload,
   User,
   Volume1,
+  Waves,
   X,
 } from 'lucide-react-native';
