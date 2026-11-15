@@ -69,7 +69,7 @@ One step at a time, each checked before the next. Status after the 2026-11-13 bu
 6. **Account deletion by email request.** Built. "Delete account" in the Account row opens an email draft to `encarnacionelher@gmail.com` with the account's email and id. `public/delete-account.html` is the web page, served at `https://wickglow.vercel.app/delete-account` once deployed; that link goes in the Play Console. Still to do: check this against Play's current account-deletion policy before release.
 7. **Release prep.** Owner tasks below, then the Play release steps in progress.md.
 
-Done when a second device shows the same XP, streak, tasks and history, and the rules tests pass. The rules tests pass. The two-device case passes in `account-sync.test.ts` (two fake devices on one in-memory account); it still needs checking on real devices against the live project.
+Done when a second device shows the same XP, streak, tasks and history, and the rules tests pass. The rules tests pass. The two-device case passes in `account-sync.test.ts` (two fake devices on one in-memory account); the owner checked it on two real devices against the live project on 2026-11-15.
 
 ## Read and write costs (fix B, owner 2026-11-13)
 
@@ -108,10 +108,10 @@ After the read-cost fix (the first build's checks were the same kind, with fewer
 
 - [x] Firebase: turn on **Google** under Security, Authentication, Sign-in method.
 - [x] Vercel: add the six `EXPO_PUBLIC_FIREBASE_*` variables under Project, Settings, Environment Variables.
-- [ ] **Deploy the Firestore rules**: `npx firebase login`, then `npm run deploy:rules`. Until then the live database denies everything and the Account row shows "Could not reach your account" after sign-in.
-- [ ] EAS: add the same six variables (`eas env:create`) so Android builds can reach Firebase.
-- [ ] Google on Android: register an Android app in Firebase with package `com.cent.wickglow` and the SHA-1 from `eas credentials`; copy the **Web client ID** (Authentication, Sign-in method, Google, Web SDK configuration) into `.env` and EAS as `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (Vercel does not need it: web uses the popup); then make a new development build. Email sign-in works on the current development build; only Google needs the new one.
-- [ ] Privacy policy: add the account data stored in Firebase (email, account id, focus sessions, daily totals, tasks).
+- [x] **Deploy the Firestore rules**: `npx firebase login`, then `npm run deploy:rules`. Done (owner confirmed 2026-11-15).
+- [x] EAS: add the same six variables (`eas env:create`) so Android builds can reach Firebase. All six plus `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` are set in the **development** environment; `eas env:list` showed preview and production empty on 2026-11-15. The owner's installed APK signs in fine. `eas.json` profiles set no `environment`, so if a later `preview` or `production` cloud build cannot reach Firebase, tick Preview and Production on these seven on expo.dev.
+- [x] Google on Android (owner confirmed 2026-11-15: `com.cent.wickglow` is registered in Firebase with the EAS SHA-1, and sign-in works on the installed APK). Before Play, add the Play App Signing SHA-1 as a second fingerprint. Original step: register an Android app in Firebase with package `com.cent.wickglow` and the SHA-1 from `eas credentials`; copy the **Web client ID** (Authentication, Sign-in method, Google, Web SDK configuration) into `.env` and EAS as `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (Vercel does not need it: web uses the popup); then make a new development build. Email sign-in works on the current development build; only Google needs the new one.
+- [x] Privacy policy: add the account data stored in Firebase (email, account id, focus sessions, daily totals, tasks). Done: `public/privacy.html`, "With an account" (checked 2026-11-15).
 
 ## Answered (owner, 2026-11-13)
 

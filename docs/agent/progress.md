@@ -8,20 +8,24 @@ v2
 
 ## Current feature
 
-Google Play release
+Landing page (roadmap #12), alongside the Google Play release, whose remaining steps are owner tasks.
 
 ## Current goal
 
-Ship Wickglow on Google Play. 
+A web landing page that explains Wickglow and offers the Android APK for download, live before the Play listing exists. Ship Wickglow on Google Play after that.
 
 ## Not yet completed
 
-- Google Play release (current). See Google Play deployment.
-- C1 from [../issues.md](../issues.md): the uncleared videos.
+- Landing page (current). See roadmap #12.
+- Google Play release. See Google Play deployment.
+- C1 fixed 2026-11-15: every video left is cleared, and Night Hills was removed. See `BACKGROUND_LICENSES.md`. The landing page now waits only on the APK link.
 
 ## Open questions
 
-None right now.
+Landing page (roadmap #12). Built 2026-11-15. Moved the same day (owner): the landing page is `/` on the web and the web app is `/app`; returning visitors skip to `/app`; `/download` redirects to `/`. Android still opens the app at `/`. See roadmap #12. Waiting on the owner for item 1; item 2 is done:
+
+1. The Google Drive share link for the APK (set to "Anyone with the link"). Replace `APK_URL` in `components/landing/content.ts`; it is a placeholder (`https://drive.google.com/`) until then. Drive shows a "can't scan for viruses" page before files over about 100MB download, so the button may land there first.
+2. Screenshots are in (2026-11-15): WebP copies in `assets/landing/`, made from `assets/images/screenshots/` (about 80KB instead of 1.8MB), shown by `GALLERY` (three desktop shots in a Mac-style window) and `PHONE_SHOT` (beside the download) in `content.ts`. Replace a file in `assets/landing/` to change one. Gallery redesigned 2026-11-15: wider than the text column (1200), browser title bar with an address pill (`GALLERY_ADDRESS`), warm glow under the window, scene tabs plus a per-slide `caption` instead of dots.
 
 ## Google Play deployment
 
@@ -34,7 +38,7 @@ Work for the owner, in order:
 5. **Content rating questionnaire.**
 6. **Target audience.** 13+ age groups only, and "No" to appealing to children.
 7. **Permissions declaration.** The app declares `SCHEDULE_EXACT_ALARM` and `USE_EXACT_ALARM` (session-end alarm) and a media playback foreground service. Google may ask why the exact-alarm permissions are needed. Check the declaration before submitting.
-8. **Background licences** (`BACKGROUND_LICENSES.md`). Kept as they are for now. Still open: the permission text for `frog_lily_pond` (Abi Toads), Wallper's reply for `cyberpunk_desk`, Wallper's coverage of `snowy_sled`, `mossy_branch` and `night_hills` (add their page links), and the row for `270983_medium.mp4` (Classic, Pixabay) if still missing.
+8. **Background licences** (`BACKGROUND_LICENSES.md`). Done 2026-11-15: every video in the app is cleared (Pixabay, CraftPix, or Abi Toads' permission). Keep screenshots of Abi's message.
 9. **Release build.** The APK for testing is installed. For Play, build an `.aab` with `eas build --platform android` (production profile). Test that build on a device, because a debug build does not show R8 problems.
 10. **Closed test.** 12 testers opted in for 14 consecutive days (personal accounts created after 13 November 2023). Start it as soon as the release build is ready.
 11. **Production access.** Apply after the closed test has run 14 days.
@@ -49,7 +53,7 @@ None right now.
 
 ## Still to check
 
-- Tablet side column spacing (2026-11-15): sections with dividers. Look at it on a tablet or a 600-840 web window.
+Nothing. The owner checked everything on 2026-11-15: two-device sync, ambient sounds with the screen off, own music files (no duplicate copy), timer controls, music source switching, the Scenes panel, the landing page at phone width, the desktop stream player and the tablet side column spacing.
 
 ## Tooling notes
 
