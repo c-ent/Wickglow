@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sessionFace } from '@/src/core/session-face';
@@ -25,6 +25,14 @@ import { useEndStream } from '@/components/wickglow/features/audio/stream-stage'
 import { SessionEndCard } from '@/components/wickglow/features/timer/session-end-card';
 import { TimeText } from '@/components/wickglow/features/timer/time-text';
 import { ClockIcon, FlameIcon, ResetIcon, SkipIcon } from '@/components/wickglow/shared/icons';
+import { useTour, useTourRevealer, useTourTarget } from '@/components/wickglow/features/tour/tour';
+import { measureInWindow, waitUntilStill, type TourNode } from '@/components/wickglow/features/tour/measure';
+import type { FlashListRef } from '@shopify/flash-list';
+import type { PlaylistEntry } from '@/src/core/own-tracks';
+
+// How far below the side column's top edge the tour scrolls a part to.
+const REVEAL_MARGIN = 24;
+
 
 /**
  * The tablet layout (window 600-840px wide): a split screen. Left half is the
@@ -40,10 +48,48 @@ export function TabletWickglow() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const keyboard = useKeyboardInset();
+  // The first-run tour: the controls stay up (no zen) while it runs, and each
+  // step scrolls the side column so its section is in view.
+  const tour = useTour();
+  const timerTarget = useTourTarget('timer');
+  const tasksTarget = useTourTarget('tasks');
+  const moodTarget = useTourTarget('scenes');
+  const soundsTarget = useTourTarget('music');
+  const ambientTarget = useTourTarget('ambient');
+  const statsTarget = useTourTarget('progress');
+  // Both columns scroll: the left one when the window is short, the side
+  // column always. The tour scrolls whichever holds the part it shows.
+  const stageRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const stageBoxRef = useRef<React.ComponentRef<typeof View>>(null);
+  const stageY = useRef(0);
+  const sideRef = useRef<React.ComponentRef<typeof View>>(null);
+  const listRef = useRef<FlashListRef<PlaylistEntry>>(null);
+  const sideY = useRef(0);
+  const reveal = useCallback(async (node: TourNode) => {
+    const columns = [
+      { box: stageBoxRef.current, y: stageY, scrollTo: (offset: number) => stageRef.current?.scrollTo({ y: offset, animated: true }) },
+      { box: sideRef.current, y: sideY, scrollTo: (offset: number) => listRef.current?.scrollToOffset({ offset, animated: true }) },
+    ];
+    const part = await measureInWindow(node);
+    if (!part) return;
+    for (const column of columns) {
+      if (!column.box) continue;
+      const frame = await measureInWindow(column.box);
+      if (!frame || part.x < frame.x || part.x >= frame.x + frame.width) continue;
+      const top = part.y - frame.y;
+      const bottom = top + Math.min(part.height, frame.height - REVEAL_MARGIN * 2);
+      if (top >= REVEAL_MARGIN && bottom <= frame.height - REVEAL_MARGIN) return;
+      // Bring the part's top near the top of its column, so what follows it shows too.
+      column.scrollTo(Math.max(0, column.y.current + top - REVEAL_MARGIN));
+      await waitUntilStill(node);
+      return;
+    }
+  }, []);
+  useTourRevealer(reveal);
   // Zen mode, as on the phone: hide the UI after 4s without a touch during focus.
   // Not while the keyboard is up: typing a task or a link is activity, and the
   // side column holding the field must not fade out under it.
-  const { zen, poke } = useZen(lamp.running && lamp.mode === 'focus' && lamp.zenOpt && keyboard === 0, 4000);
+  const { zen, poke } = useZen(lamp.running && lamp.mode === 'focus' && lamp.zenOpt && keyboard === 0 && !tour.active, 4000);
   const mood = lamp.moodTheme;
   // Timer digits scale with the window, clamped to 48..72px.
   const timeSize = Math.min(72, Math.max(48, width * 0.08));
@@ -62,8 +108,14 @@ export function TabletWickglow() {
       {/* Two columns side by side (flexDirection: 'row'). */}
       <View style={[styles.split, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         {/* Left: level, candle, time, mode tabs and start/reset/skip. */}
+        <View ref={stageBoxRef} collapsable={false} style={styles.stage}>
         <ScrollView
-          style={styles.stage}
+          ref={stageRef}
+          onScroll={(event) => {
+            stageY.current = event.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={32}
+          style={styles.stageScroll}
           contentContainerStyle={styles.stageContent}
           showsVerticalScrollIndicator={false}
         >
@@ -118,7 +170,7 @@ export function TabletWickglow() {
               );
             })}
           </View>
-          <View style={styles.actions}>
+          <View ref={timerTarget} collapsable={false} style={styles.actions}>
             <Pressable accessibilityRole="button" accessibilityLabel="Reset timer" style={[styles.round, { opacity: zen ? 0 : 1 }]} pointerEvents={zen ? 'none' : 'auto'} onPress={reset}><ResetIcon color={colors.textPrimary} /></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={face.startLabel} style={[styles.start, { backgroundColor: mood.accent }]} onPress={toggle}>
               <Text style={styles.startText}>{face.startLabel}</Text>
@@ -126,15 +178,20 @@ export function TabletWickglow() {
             <Pressable accessibilityRole="button" accessibilityLabel="Skip timer" style={[styles.round, { opacity: zen ? 0 : 1 }]} pointerEvents={zen ? 'none' : 'auto'} onPress={skip}><SkipIcon color={colors.textPrimary} /></Pressable>
           </View>
         </ScrollView>
+        </View>
 
         {/* Right: everything the phone keeps in its bottom sheet, stacked in
             one scrolling column. The column is the track list's own scroller
             (so the tracks can be virtualised); the rest rides along above and
             below the tracks. Extra bottom padding lifts the content above the
             on-screen keyboard. */}
-        <View style={[styles.side, { opacity: zen ? 0 : 1 }]} pointerEvents={zen ? 'none' : 'auto'}>
+        <View ref={sideRef} collapsable={false} style={[styles.side, { opacity: zen ? 0 : 1 }]} pointerEvents={zen ? 'none' : 'auto'}>
           <SoundsScroller
             mobile
+            listRef={listRef}
+            onScroll={(event) => {
+              sideY.current = event.nativeEvent.contentOffset.y;
+            }}
             contentContainerStyle={[styles.sideContent, keyboard > 0 ? { paddingBottom: keyboard + 28 } : null]}
             // Each group is its own section: a hairline divider and room above
             // it, so the column reads as separate blocks instead of one run.
@@ -143,17 +200,19 @@ export function TabletWickglow() {
             // rows (they are the list's items), so its divider tops the title.
             before={(
               <>
-                <Text style={[styles.kicker, styles.kickerFirst]}>Tasks</Text>
-                <TaskList mobile />
-                <View style={styles.section}><MoodPicker video /></View>
-                <View style={styles.section}><Text style={styles.kicker}>Sounds</Text></View>
+                <View ref={tasksTarget} collapsable={false}>
+                  <Text style={[styles.kicker, styles.kickerFirst]}>Tasks</Text>
+                  <TaskList mobile />
+                </View>
+                <View ref={moodTarget} collapsable={false} style={styles.section}><MoodPicker video /></View>
+                <View ref={soundsTarget} collapsable={false} style={styles.section}><Text style={styles.kicker}>Sounds</Text></View>
               </>
             )}
             after={(
               <>
-                <View style={styles.section}><MixerBlock mobile /></View>
+                <View ref={ambientTarget} collapsable={false} style={styles.section}><MixerBlock mobile /></View>
                 <View style={styles.section}><QuestList mobile /></View>
-                <View style={styles.section}>
+                <View ref={statsTarget} collapsable={false} style={styles.section}>
                   <Text style={styles.kicker}>Stats</Text>
                   <StatGrid />
                   <WeekChart mobile />
@@ -202,6 +261,9 @@ const styles = StyleSheet.create({  root: {
   },
   stage: {
     flex: 1.05,
+  },
+  stageScroll: {
+    flex: 1,
   },
   stageContent: {
     flexGrow: 1,

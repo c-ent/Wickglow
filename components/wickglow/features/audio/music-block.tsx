@@ -1,10 +1,10 @@
 import { colors, fade, fonts, radius, rounded } from '@/src/theme/tokens';
 import { openStreamEmbed, STREAMING_AVAILABLE } from '@/components/wickglow/features/audio/stream-stage';
 import Slider from '@react-native-community/slider';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { formatTrackTime } from '@/src/core/track-time';
-import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent, type StyleProp, type ViewStyle } from 'react-native';
 import Reanimated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { PlaylistEntry } from '@/src/core/own-tracks';
@@ -39,7 +39,7 @@ import { useTone } from '@/components/wickglow/features/tone';
  */
 // Which view the phone/tablet Sounds page shows. 'ambient' only exists when
 // the screen passes `ambient` (the phone does; see SoundsScroller).
-type MusicSource = 'tracks' | 'ambient';
+export type MusicSource = 'tracks' | 'ambient';
 
 const SOURCE_LABEL: Record<MusicSource, string> = { tracks: 'Tracks', ambient: 'Ambient' };
 
@@ -107,6 +107,11 @@ export function SoundsScroller({
   after,
   ambient,
   contentContainerStyle,
+  listRef,
+  onScroll,
+  source: sourceProp,
+  onSourceChange,
+  ambientTabRef,
 }: {
   mobile?: boolean;
   /** Rendered above the Tracks / Ambient switch. */
@@ -116,9 +121,19 @@ export function SoundsScroller({
   /** When given, an Ambient view that shows this alone (`before` and `after` hide there). */
   ambient?: React.ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
+  /** The list itself, so a layout can scroll it (the tablet tour does). */
+  listRef?: React.Ref<FlashListRef<PlaylistEntry>>;
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  /** The view on show, when the layout controls it (the phone tour opens Ambient). */
+  source?: MusicSource;
+  onSourceChange?: (next: MusicSource) => void;
+  /** A ref for the Ambient button of the switch. */
+  ambientTabRef?: React.Ref<React.ComponentRef<typeof View>>;
 }) {
   const tone = useTone(mobile);
-  const [source, setSource] = useState<MusicSource>('tracks');
+  const [ownSource, setOwnSource] = useState<MusicSource>('tracks');
+  const source = sourceProp ?? ownSource;
+  const setSource = onSourceChange ?? setOwnSource;
   // Streaming lives only on the desktop Music card,
   // so phone and tablet never offer it. Without Ambient (the tablet) only
   // Tracks is left, so the switch is not shown at all.
@@ -132,6 +147,9 @@ export function SoundsScroller({
 
   return (
     <FlashList
+      ref={listRef}
+      onScroll={onScroll}
+      scrollEventThrottle={onScroll ? 32 : undefined}
       data={source === 'tracks' ? playlist : NO_TRACKS}
       extraData={extra}
       keyExtractor={(entry) => entry.key}
@@ -148,6 +166,7 @@ export function SoundsScroller({
               value={source}
               options={options}
               labels={SOURCE_LABEL}
+              refs={{ ambient: ambientTabRef }}
               onChange={setSource}
               mobile={mobile}
               first={!before || source === 'ambient'}

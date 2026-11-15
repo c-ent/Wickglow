@@ -112,6 +112,21 @@ describe('tasks', () => {
     expect(confirmed.push.tasks).toEqual([tomb(1, NOW + 2)]);
   });
 
+  it('opens the subtask list of a task whose subtasks arrive from the account', () => {
+    const parent = task(1, 'essay');
+    const sub = task(2, 'outline', { parentId: 1 });
+    // Both new from the account: the parent arrives open.
+    const fresh = reconcile({ log: emptyLog(), tasks: [] }, emptyMeta('u1'), remote({ tasks: [remoteTask(parent, 100), remoteTask(sub, 100)] }), NOW, false);
+    expect(fresh.tasks.find((item) => item.id === 1)?.open).toBe(true);
+    // A parent already here and closed opens when a new subtask arrives.
+    const meta = seen(emptyMeta('u1'), [remoteTask(parent, 100)]);
+    const later = reconcile({ log: emptyLog(), tasks: [parent] }, meta, remote({ tasks: [remoteTask(parent, 100), remoteTask(sub, 200)] }), NOW, false);
+    expect(later.tasks.find((item) => item.id === 1)?.open).toBe(true);
+    // A task with no new subtasks keeps its closed list.
+    const plain = reconcile({ log: emptyLog(), tasks: [] }, emptyMeta('u1'), remote({ tasks: [remoteTask(task(3, 'read'), 100)] }), NOW, false);
+    expect(plain.tasks[0].open).toBe(false);
+  });
+
   it('does not sync the open subtask list or the session count', () => {
     const synced = remoteTask(task(1), 100);
     const meta = seen(emptyMeta('u1'), [synced]);

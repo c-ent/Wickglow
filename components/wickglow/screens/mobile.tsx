@@ -31,11 +31,14 @@ import { TimerSettings } from '@/components/wickglow/features/settings/timer-set
 import { TaskList } from '@/components/wickglow/features/tasks/task-list';
 import { FocusLine } from '@/components/wickglow/features/tasks/focus-line';
 import { MixerBlock } from '@/components/wickglow/features/audio/mixer-block';
-import { SoundsScroller } from '@/components/wickglow/features/audio/music-block';
+import { SoundsScroller, type MusicSource } from '@/components/wickglow/features/audio/music-block';
 import { useEndStream } from '@/components/wickglow/features/audio/stream-stage';
 import { SessionEndCard } from '@/components/wickglow/features/timer/session-end-card';
 import { TimeText } from '@/components/wickglow/features/timer/time-text';
 import { SegmentTabs } from '@/components/wickglow/shared/segment-tabs';
+import { useTour, useTourRevealer, useTourTarget } from '@/components/wickglow/features/tour/tour';
+import { waitUntilStill } from '@/components/wickglow/features/tour/measure';
+import type { TourTarget } from '@/src/core/tour';
 import { BarsIcon, ClockIcon, CloseIcon, FlameIcon, MusicIcon, PauseIcon, PlayIcon, ResetIcon, SceneIcon, SkipIcon, TaskIcon, TimerIcon } from '@/components/wickglow/shared/icons';
 
 /**
@@ -97,9 +100,34 @@ export function MobileWickglow() {
   // empty itself on the way out. Set when a tab opens, cleared after the slide.
   const [mounted, setMounted] = useState(false);
   const shown = open || mounted;
+  // Tracks or Ambient on the Sounds tab. Held here so the tour can open Ambient.
+  const [soundsView, setSoundsView] = useState<MusicSource>('tracks');
+  // The first-run tour points at the timer and the tab bar, so the sheet is
+  // closed while it runs, and the controls stay up (no zen). Its Ambient step
+  // opens Sounds on the Ambient view and points at the Ambient button.
+  const tour = useTour();
+  const timerTarget = useTourTarget('timer');
+  const ambientTabTarget = useTourTarget('ambient');
+  // The sheet slides up for the Ambient step, so wait for it to settle before
+  // the tour measures what it points at.
+  useTourRevealer(waitUntilStill);
+  // Set during render when the step changes (React's "adjust state when a
+  // value changes" pattern), so the sheet is already right under the new step.
+  const [tourWas, setTourWas] = useState(tour.step);
+  if (tourWas !== tour.step) {
+    setTourWas(tour.step);
+    if (tour.step === 'ambient') {
+      setTab('sounds');
+      setSoundsView('ambient');
+      setOpen(true);
+      setMounted(true);
+    } else if (tour.step) {
+      setOpen(false);
+    }
+  }
   // "Zen": while focusing with the sheet closed, the UI fades away after 4s
   // of no touches. Any touch counts as activity (`poke`).
-  const { zen, poke } = useZen(lamp.running && lamp.mode === 'focus' && lamp.zenOpt && !open, 4000);
+  const { zen, poke } = useZen(lamp.running && lamp.mode === 'focus' && lamp.zenOpt && !open && !tour.active, 4000);
   // The sheet's slide, run on the UI thread.
   const sheetOffset = useSharedValue(1);
   const mood = lamp.moodTheme;
@@ -221,7 +249,7 @@ export function MobileWickglow() {
             </View>
           ))}
         </View>
-        <View style={styles.actions}>
+        <View ref={timerTarget} collapsable={false} style={styles.actions}>
           <Pressable accessibilityRole="button" accessibilityLabel="Reset timer" style={[styles.round, fade]} pointerEvents={touch} onPress={reset}><ResetIcon color={colors.textPrimary} /></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={face.startLabel} style={[styles.start, { backgroundColor: tint(mood.accent, 0.24), borderColor: tint(mood.accent, 0.6) }]} onPress={toggle}>
             <Text style={styles.startText}>{face.startLabel}</Text>
@@ -279,7 +307,14 @@ export function MobileWickglow() {
           <View style={styles.body}>
             {/* Tracks, Streaming and Ambient each show alone. Ambient holds the
                 mood (the look) and the ambient loops, the two that set the room. */}
-            <SoundsScroller mobile ambient={<MixerBlock mobile />} contentContainerStyle={bodyContent} />
+            <SoundsScroller
+              mobile
+              ambient={<MixerBlock mobile />}
+              source={soundsView}
+              onSourceChange={setSoundsView}
+              ambientTabRef={ambientTabTarget}
+              contentContainerStyle={bodyContent}
+            />
           </View>
         ) : shown ? (
           <ScrollView
@@ -299,10 +334,10 @@ export function MobileWickglow() {
 
       {/* Tab bar, fixed at the bottom. It fades with zen like the rest. */}
       <View style={[styles.tabBar, { bottom: barGap }, fade, typing && styles.hidden]} pointerEvents={typing ? 'none' : touch}>
-        <DockItem label="Tasks" active={open && tab === 'tasks'} color={mood.accent} onPress={() => openTab('tasks')}><TaskIcon size={20} /></DockItem>
-        <DockItem label="Sounds" active={open && tab === 'sounds'} color={mood.accent} dot={lamp.musicPlaying || lamp.activeStreamId != null} onPress={() => openTab('sounds')}><MusicIcon size={20} /></DockItem>
-        <DockItem label="Stats" active={open && tab === 'stats'} color={mood.accent} dot={questOpen} onPress={() => openTab('stats')}><BarsIcon size={20} /></DockItem>
-        <DockItem label="Mood" active={open && tab === 'mood'} color={mood.accent} onPress={() => openTab('mood')}><SceneIcon size={20} /></DockItem>
+        <DockItem tour={['tasks']} label="Tasks" active={open && tab === 'tasks'} color={mood.accent} onPress={() => openTab('tasks')}><TaskIcon size={20} /></DockItem>
+        <DockItem tour={['music']} label="Sounds" active={open && tab === 'sounds'} color={mood.accent} dot={lamp.musicPlaying || lamp.activeStreamId != null} onPress={() => openTab('sounds')}><MusicIcon size={20} /></DockItem>
+        <DockItem tour={['progress']} label="Stats" active={open && tab === 'stats'} color={mood.accent} dot={questOpen} onPress={() => openTab('stats')}><BarsIcon size={20} /></DockItem>
+        <DockItem tour={['scenes']} label="Mood" active={open && tab === 'mood'} color={mood.accent} onPress={() => openTab('mood')}><SceneIcon size={20} /></DockItem>
         <DockItem label="Timer" active={open && tab === 'timer'} color={mood.accent} onPress={() => openTab('timer')}><TimerIcon size={20} /></DockItem>
       </View>
 
@@ -383,10 +418,14 @@ function LevelRing({ progress, color, level }: { progress: number; color: string
 
 // One tab button in the sheet's dock. It recolors the icon passed as `children`
 // (cloneElement injects a `color` prop) so active/inactive state needs no extra
-// icon variants. `dot` draws a small "something here" marker.
-function DockItem({ children, label, active, color, dot, onPress }: { children: React.ReactNode; label: string; active: boolean; color: string; dot?: boolean; onPress: () => void }) {
+// icon variants. `dot` draws a small "something here" marker. `tour` lists the
+// tour steps that point at this tab.
+function DockItem({ children, label, active, color, dot, onPress, tour = [] }: { children: React.ReactNode; label: string; active: boolean; color: string; dot?: boolean; onPress: () => void; tour?: TourTarget[] }) {
+  const target = useTourTarget(...tour);
   return (
     <Pressable
+      ref={target}
+      collapsable={false}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
@@ -418,7 +457,7 @@ const styles = StyleSheet.create({
   dim: {
     ...StyleSheet.absoluteFill,
     zIndex: 4,
-    backgroundColor: 'rgba(5, 3, 10, 0.6)',
+    backgroundColor: colors.scrim,
   },
   levelBtn: {
     flexDirection: 'row',

@@ -8,15 +8,16 @@ v2
 
 ## Current feature
 
-Landing page (roadmap #12), alongside the Google Play release, whose remaining steps are owner tasks.
+First-run tour (roadmap #13), started 2026-11-15 (owner). The landing page (#12) is done (owner, 2026-11-15) apart from the APK link. The Google Play release steps are owner tasks.
 
 ## Current goal
 
-A web landing page that explains Wickglow and offers the Android APK for download, live before the Play listing exists. Ship Wickglow on Google Play after that.
+New users see a short tour that points at the timer, music, ambient sounds, mood or scenes, tasks and progress on phone, tablet and desktop. Ship Wickglow on Google Play after that.
 
 ## Not yet completed
 
-- Landing page (current). See roadmap #12.
+- First-run tour (current), built 2026-11-15. See roadmap #13 and Still to check.
+- Landing page APK link (roadmap #12, open question 1 below).
 - Google Play release. See Google Play deployment.
 - EAS preview and production environments have no Firebase vars yet (only development does), so a `preview` APK build cannot reach Firebase until the seven vars are ticked for both on expo.dev. See `docs/feature/firebase.md`, Owner tasks.
 - Review fixes 2026-11-15: no session can start while a sign-out runs, and sign-out stops when storage could not be read at launch. A state taken from another tab keeps that tab's task edit times. Gallery arrows keep counting past either end. Privacy policy: removed the wrong Android streaming sentence. Pixabay licence note now covers lightly changed copies.
@@ -61,6 +62,10 @@ None right now.
 
 ## Still to check
 
+- Android date picker (2026-11-15, owner approved the dependency): `@react-native-community/datetimepicker` 9.2.1 via `npx expo install`, with its config plugin in `app.json`. The add form and each task row show a calendar button that opens the system date dialog (`features/tasks/due-picker.android.ts`; OK sets the day, Clear removes it, Cancel leaves it). It is native code, so it needs a new EAS build; check there that picking, changing and clearing a date work and that the day does not shift. `expo-doctor` passes 20/20.
+- Task list speed and synced subtasks (2026-11-15, owner report: Android lagged with 20 tasks and about 80 subtasks, and synced subtasks were hidden). Each task row is now a memoized `TaskItem`, and the new-task and subtask drafts live in their own row, so typing or changing one task redraws only that row. A subtask new from the account opens its parent's list (`reconcile` in `src/core/sync.ts`), as adding one on the device does. Tasks synced before this change stay closed until tapped once. Check on the Android build that typing and ticking feel quick with a long list.
+- Desktop cards (2026-11-15, owner): Tasks is up to 900 wide, and Progress, Quests and Tasks scroll inside the card under a fixed heading, so the scrollbar sits inside the card and the bottom corners stay rounded. Phone tour: the Ambient step opens Sounds on Ambient and points at the Ambient button. "Show tour again" sits right of "About Wickglow" on one line. Not yet looked at in a browser.
+- First-run tour (2026-11-15): checked in a browser at desktop, phone (390 wide) and tablet (760 wide) widths: every step finds its part, the tablet columns scroll to it, Done and Skip store `wickglow:tour` and it does not return, and "Show tour again" starts it. Still to check on an Android build: the highlight sits on each tab (Android measures in window coordinates under the status bar), and the tablet layout in landscape.
 - Retired scene clean-up (2026-11-15, from a code review): on launch the app deletes downloaded scenes no longer in `VIDEOS` or `PIXEL_ART` (`removeRetiredScenes`). On a phone that had the old Cyberpunk Desk or Night Hills downloaded, check they are gone and the other downloads stay.
 
 Everything else was checked by the owner on 2026-11-15: two-device sync, ambient sounds with the screen off, own music files (no duplicate copy), timer controls, music source switching, the Scenes panel, the landing page at phone width, the desktop stream player and the tablet side column spacing.
