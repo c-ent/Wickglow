@@ -99,7 +99,10 @@ export function TourOverlay({ layout, step, index, count, nodeFor, buttonFor, re
     if (!web || typeof document === 'undefined') return undefined;
     const root = domOf(rootRef);
     if (!root) return undefined;
-    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    // Focus on the body means nothing had focus (a launch, or the button that
+    // started the tour sat in a panel the tour closed), so it is not kept.
+    const active = document.activeElement;
+    const before = active instanceof HTMLElement && active !== document.body ? active : null;
     const made: HTMLElement[] = [];
     for (let node: HTMLElement | null = root; node && node !== document.body; node = node.parentElement) {
       for (const sibling of Array.from(node.parentElement?.children ?? [])) {
