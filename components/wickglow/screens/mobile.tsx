@@ -38,7 +38,7 @@ import { TimeText } from '@/components/wickglow/features/timer/time-text';
 import { SegmentTabs } from '@/components/wickglow/shared/segment-tabs';
 import { useTour, useTourRevealer, useTourTarget } from '@/components/wickglow/features/tour/tour';
 import { waitUntilStill } from '@/components/wickglow/features/tour/measure';
-import type { TourTarget } from '@/src/core/tour';
+import type { TourStep, TourTarget } from '@/src/core/tour';
 import { BarsIcon, ClockIcon, CloseIcon, FlameIcon, MusicIcon, PauseIcon, PlayIcon, ResetIcon, SceneIcon, SkipIcon, TaskIcon, TimerIcon } from '@/components/wickglow/shared/icons';
 
 /**
@@ -60,6 +60,18 @@ import { BarsIcon, ClockIcon, CloseIcon, FlameIcon, MusicIcon, PauseIcon, PlayIc
 
 // The sheet shows one tab at a time.
 type SheetTab = 'tasks' | 'sounds' | 'stats' | 'mood' | 'timer';
+
+// The sheet tab (and Sounds view) each tour step opens; the welcome and Timer
+// steps keep the sheet closed.
+const TOUR_SHEET: Record<TourStep['id'], { tab: SheetTab; view?: MusicSource } | null> = {
+  welcome: null,
+  timer: null,
+  music: { tab: 'sounds', view: 'tracks' },
+  ambient: { tab: 'sounds', view: 'ambient' },
+  scenes: { tab: 'mood' },
+  tasks: { tab: 'tasks' },
+  progress: { tab: 'stats' },
+};
 
 // The tab bar's height above the home-indicator inset.
 const TAB_BAR_HEIGHT = 64;
@@ -102,14 +114,15 @@ export function MobileWickglow() {
   const shown = open || mounted;
   // Tracks or Ambient on the Sounds tab. Held here so the tour can open Ambient.
   const [soundsView, setSoundsView] = useState<MusicSource>('tracks');
-  // The first-run tour points at the timer and the tab bar, so the sheet is
-  // closed while it runs, and the controls stay up (no zen). Its Ambient step
-  // opens Sounds on the Ambient view and points at the Ambient button.
+  // The first-run tour opens each step's sheet tab behind it and points at
+  // that tab's button (the Timer step closes the sheet and points at the
+  // controls, the Ambient step points at the Ambient button in Sounds). The
+  // sheet closes when the tour ends, and the controls stay up (no zen).
   const tour = useTour();
   const timerTarget = useTourTarget('timer');
   const ambientTabTarget = useTourTarget('ambient');
-  // The sheet slides up for the Ambient step, so wait for it to settle before
-  // the tour measures what it points at.
+  // The sheet slides up, so wait for it to settle before the tour measures
+  // what it points at.
   useTourRevealer(waitUntilStill);
   // Set during render when the step changes (React's "adjust state when a
   // value changes" pattern), so the sheet is already right under the new step.
@@ -118,12 +131,13 @@ export function MobileWickglow() {
   const [tourWas, setTourWas] = useState<typeof tour.step>(null);
   if (tourWas !== tour.step) {
     setTourWas(tour.step);
-    if (tour.step === 'ambient') {
-      setTab('sounds');
-      setSoundsView('ambient');
+    const sheet = tour.step ? TOUR_SHEET[tour.step] : null;
+    if (sheet) {
+      setTab(sheet.tab);
+      if (sheet.view) setSoundsView(sheet.view);
       setOpen(true);
       setMounted(true);
-    } else if (tour.step) {
+    } else {
       setOpen(false);
     }
   }

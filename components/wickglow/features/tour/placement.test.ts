@@ -1,4 +1,36 @@
-import { EDGE, GAP, placeCard, visibleRect } from './placement';
+import { dimPieces, EDGE, GAP, placeCard, visibleRect } from './placement';
+
+describe('dimPieces', () => {
+  const area = (pieces: { width: number; height: number }[]) => pieces.reduce((sum, piece) => sum + piece.width * piece.height, 0);
+
+  it('covers the whole window with no holes', () => {
+    expect(dimPieces([], { width: 400, height: 800 })).toEqual([{ x: 0, y: 0, width: 400, height: 800 }]);
+  });
+
+  it('leaves out every hole and covers the rest exactly', () => {
+    const holes = [
+      { x: 20, y: 100, width: 300, height: 400 },
+      { x: 20, y: 700, width: 40, height: 40 },
+    ];
+    const pieces = dimPieces(holes, { width: 400, height: 800 });
+    expect(area(pieces)).toBe(400 * 800 - 300 * 400 - 40 * 40);
+    for (const piece of pieces) {
+      for (const hole of holes) {
+        const overlapX = Math.min(piece.x + piece.width, hole.x + hole.width) - Math.max(piece.x, hole.x);
+        const overlapY = Math.min(piece.y + piece.height, hole.y + hole.height) - Math.max(piece.y, hole.y);
+        expect(overlapX > 0 && overlapY > 0).toBe(false);
+      }
+    }
+  });
+
+  it('handles holes that overlap', () => {
+    const holes = [
+      { x: 0, y: 0, width: 200, height: 200 },
+      { x: 100, y: 100, width: 200, height: 200 },
+    ];
+    expect(area(dimPieces(holes, { width: 400, height: 400 }))).toBe(400 * 400 - (200 * 200 * 2 - 100 * 100));
+  });
+});
 
 const screen = { width: 400, height: 800 };
 const card = { width: 300, height: 160 };
@@ -33,8 +65,15 @@ describe('placeCard', () => {
     expect(place).toEqual({ left: 420 - GAP - card.width, top: 100, side: 'left' });
   });
 
-  it('falls back to the middle when no side has room', () => {
-    expect(placeCard({ x: 0, y: 0, width: 400, height: 800 }, screen, card).side).toBe('center');
+  it('puts the card against the roomier window edge when no side has room', () => {
+    // Screen 400 wide: the target leaves 40 on its left and 10 on its right.
+    expect(placeCard({ x: 40, y: 100, width: 350, height: 700 }, screen, card)).toEqual({ left: 16, top: 100, side: 'edge' });
+    expect(placeCard({ x: 10, y: 100, width: 350, height: 700 }, screen, card)).toEqual({ left: 84, top: 100, side: 'edge' });
+  });
+
+  it('moves the edge card off a second highlight', () => {
+    const avoid = { x: 300, y: 90, width: 80, height: 40 };
+    expect(placeCard({ x: 10, y: 100, width: 350, height: 700 }, screen, card, undefined, avoid)).toEqual({ left: 84, top: 90 + 40 + GAP, side: 'edge' });
   });
 });
 
