@@ -8,8 +8,8 @@ import type { ImageSourcePropType } from "react-native";
  * ("Anyone with the link"). It opens the folder that holds the APK, so a new
  * build can replace the file without changing this link.
  */
-export const APK_URL =
-  "https://drive.google.com/drive/folders/16YLvSxAZZvNAGfRcZ5KzufVkMgB3-PLh?usp=sharing";
+
+export const APK_URL = "https://drive.google.com/drive/folders/16YLvSxAZZvNAGfRcZ5KzufVkMgB3-PLh?usp=sharing";
 
 export const APP_VERSION = "1.0.0";
 
