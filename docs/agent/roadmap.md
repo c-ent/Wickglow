@@ -6,8 +6,8 @@ Read this when starting or planning a feature, or when asked what comes next. Ea
 
 - Build the current item only. Do not start a related one because it looks easy.
 - Resolve the item's Open questions with the owner before writing code. Add any new ones to `progress.md`.
-- Reward rules (XP, drops, quest payouts) follow the `change-progression-rules` skill. New tables follow `add-supabase-table`.
-- When an item ships, move it to Completed in `progress.md` and update `spec.md` so it describes the app as it is.
+- Reward rules (XP, drops, quest payouts) are pure functions in `src/core` with tests, and the Firestore rules must still bound every write.
+- When an item ships, add it to `completed.md` and update `spec.md` so it describes the app as it is.
 
 ## Reward eligibility
 
@@ -105,7 +105,9 @@ Terms read 2026-11-03, before the code:
 - Apple Music (the embeddable player, not MusicKit): `embed.music.apple.com`. Signed out, a short preview. Full tracks need the listener's own Apple Music session inside that player. MusicKit would be a playback SDK and a sign-in, so it is not used.
 - YouTube Music: no embed and no oEmbed. A `music.youtube.com` link is stored and opened. A normal `youtube.com` playlist is the YouTube player.
 
-Shipped: paste a public link. The save stores the link and the service name. The music panel splits Tracks and Streaming, and adding a link opens that service's player immediately. Spotify, YouTube, and Apple Music show that service's player on the scene, so it keeps playing when the panel closes or the ambient mixer opens. The player keeps its default height and cannot be collapsed; Minimize was removed on 2026-11-07. On the web, Spotify and Apple Music keep playing in a hidden browser tab. YouTube's frame still leaves when the page is hidden, and on Android and iOS every embed still leaves when the app leaves the screen. YouTube Music opens. Starting an embed pauses the local `expo-audio` player, and closing it can resume. A private or unrecognized link fails with a short message. If the embed cannot play on Android, the player shows an "Open link" button and never opens the service app on its own (changed 2026-11-11). Session-end volume and fade stay on the local player. The timer, XP, and quests stay on the session clock. Pure parsing is in `src/core/stream-links.ts`.
+Shipped, web only, in the desktop layout: paste a public link. The save stores the link and the service name. The Music card splits Tracks and Streaming, and adding a link opens that service's player immediately. Spotify, YouTube, and Apple Music show that service's player on the scene, so it keeps playing when the card closes or the ambient mixer opens. The player keeps its default height and cannot be collapsed. Spotify and Apple Music keep playing in a hidden browser tab; YouTube's frame leaves while the page is hidden. YouTube Music opens. Starting an embed pauses the local `expo-audio` player, and closing it can resume. A private or unrecognized link fails with a short message. If an embed cannot play, the player shows an "Open link" button and never opens the service on its own. Session-end volume and fade stay on the local player. The timer, XP, and quests stay on the session clock. Pure parsing is in `src/core/stream-links.ts`.
+
+Android and iOS have no Streaming view and no embed, and neither do phone and tablet widths on the web (see `spec.md`).
 
 Open questions: whether links can be shared in rooms (decided with the rooms item).
 
@@ -117,9 +119,9 @@ Decided 2026-11-15:
 
 - On the web, `/` is the landing page (`app/index.web.tsx`, UI in `components/landing/`) and the web app is at `/app` (`app/app.tsx`). On Android and iOS, `/` stays the app (`app/index.tsx`). A visitor who has used the web app before is sent from `/` to `/app` by a script in the page head (`components/landing/returning-visitor.ts`); `/?home` shows the landing page anyway; the web app links there from an "About Wickglow" line at the end of Timer settings, opened in a new tab so a running session keeps going. `/download`, the first address, redirects to `/`. The web build uses `"output": "static"`, so each route is pre-rendered to a static HTML page and reuses the theme tokens and fonts.
 - `/` is the page to link to (portfolio, posts, the Play listing's website field). The first plan kept the app at `/` with no redirect; the landing page moved to `/` the same day so search results show it.
-- The main button downloads the Android APK, hosted on the owner's Google Drive at first. `APK_URL` in `components/landing/content.ts` is the owner's Drive share link (set 2026-11-15).
+- The main button downloads the Android APK from a Google Drive folder. `APK_URL` in `components/landing/content.ts` is the folder link, so the APK inside can be replaced without changing it.
 - It goes live before the Google Play badge exists. When the Play listing is live, the badge is added and the APK button can be dropped or kept.
-- Screenshots: three desktop shots in one swipeable gallery ("See it in action") inside a browser-style window (three dots and an address pill showing `GALLERY_ADDRESS`, arrows, scene tabs with a one-line caption per slide, a warm glow beneath), the same 1040 column as the other sections (it was 1200 wide at first), the screen area the same shape as the screenshots, Moonlit first (`GALLERY` in `content.ts`). The phone shot sits beside the Android download in the download card (`PHONE_SHOT`). WebP files are in `assets/landing/`.
+- Screenshots: three desktop shots in one swipeable gallery ("See it in action") inside a browser-style window (three dots and an address pill showing `GALLERY_ADDRESS`, arrows, scene tabs with a one-line caption per slide, a warm glow beneath), the same 1040 column as the other sections (it was 1200 wide at first), the screen area the same shape as the screenshots: the pixel-art Meadow, then the Tasks and Music panels (`GALLERY` in `content.ts`). The phone shot sits beside the Android download in the download card (`PHONE_SHOT`). WebP files are in `assets/landing/`.
 
 Design: based on a mockup (2026-11-15). A near-black violet page with Amber glows and the flame colour as the only accent. Nav (Features, Android, Open the app); hero "Get the work done." with four floating sample widgets (timer, level, streak, ambient mix; sample numbers, drawn only on windows 1180 wide or more); a slim promise bar (Free, no ads or tracking, no account needed, no harsh alarm); a screenshot section; a "What's inside" bento grid whose pictures are the app's own components fed sample values (`components/landing/app-pieces.tsx`: `Candle`, `LevelCardView`, the task row pieces, the mixer styles, `DayCell`; the app exports `CheckBox`, `FocusButton`, `taskListStyles`, `DayCell` and `LevelCardView` for this); a download card; footer links to `/privacy`, `/delete-account` and the GitHub repo. Page-only colours are in `components/landing/palette.ts`; the rest come from the tokens.
 
@@ -165,11 +167,11 @@ The core timer, tasks, sounds and progression stay free, because reviewers compl
 
 ## v4 (dropped: multiplayer)
 
-Out as of 2026-11-10: private circles and focus rooms. Their sections below are kept only as a record of what was proposed; do not build them. Accounts and sync (#5) is back in the plan as of 2026-11-13.
+Out as of 2026-11-10: private circles and focus rooms. Their sections below are kept only as a record of what was proposed; do not build them. Accounts and sync (#5) came back on 2026-11-13 and shipped on 2026-11-15.
 
 ### 5. Accounts and sync
 
-Back in the plan as of 2026-11-13 and the current feature, ahead of the Play release. Uses Firebase on the Spark plan.
+Shipped 2026-11-15, ahead of the Play release. Uses Firebase on the Spark plan.
 
 Behavior:
 
@@ -203,7 +205,7 @@ Open questions: who becomes host when nobody is named. Rules for removing member
 
 ## Not planned
 
-iOS release, app blocking, flashcards, planners, notes (one competitor is called a "Notion wannabe"), ads, tracking SDKs, extra languages, study pets (out as of 2026-11-03; see the Evidence table for the request it would have met), achievements (out as of 2026-11-03).
+App blocking, flashcards, planners, notes (one competitor is called a "Notion wannabe"), ads, tracking SDKs, extra languages, study pets (out as of 2026-11-03; see the Evidence table for the request it would have met), achievements (out as of 2026-11-03).
 
 ## Evidence
 
@@ -222,7 +224,7 @@ Source: a competitor's feature request board and a gap analysis, shared by the p
 | Transfer host                             | 38    | Active       | v4 #11                      |
 
 Gaps to beat, from the same research:
-| Gap | Lumiere answer | Lands in |
+| Gap | Wickglow answer | Lands in |
 | --- | --- | --- |
 | No reliable Android app with a timer that survives a locked screen | Timestamp timer and scheduled notification | v1 |
 | Progress gives nothing | XP levels and daily quests | v1 |
@@ -230,6 +232,6 @@ Gaps to beat, from the same research:
 | No live accountability among friends | Friends' candles | v4 #10 |
 | Paywalled features, feature creep | Free core, no notes or planner | principle |
 | Web apps need a connection | Local-first, bundled audio, own files offline | v1, v2 #1 |
-| Generic filler music | Original or commissioned lofi | v1 |
+| Generic filler music | Licensed lofi tracks (Pixabay) | v1 |
 
 The first gap is research, not marketing copy. Do not write "no reliable Android app" in store or site text until the Play Store has been checked, and prefer a feature claim even then.

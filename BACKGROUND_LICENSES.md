@@ -13,8 +13,8 @@ A new scene needs a row here, with its source and licence, before it is added to
 | Frog Pond | `videos/frog_lily_pond.mp4` | 22s | Written permission from the artist | Abi Toads (Instagram `abi.toads`), "Frog Relaxing in Pond" |
 | Snowy Sled | `videos/snowy_sled.mp4` | 11s | Written permission from the artist | Abi Toads (Instagram `abi.toads`) |
 | Mossy Branch | `videos/mossy_branch.mp4` | 35s | Written permission from the artist | Abi Toads (Instagram `abi.toads`) |
-| Meadow | `pixel-art/meadow_4k.mp4` | — | CraftPix free-asset licence | "Nature Landscapes Free Pixel Art" by Free Game Assets: https://free-game-assets.itch.io/nature-landscapes-free-pixel-art |
-| Aurora | `pixel-art/aurora_4k.mp4` | — | CraftPix free-asset licence | Same pack (in the downloaded zip) |
+| Meadow | `pixel-art/meadow_4k.mp4` | — | CraftPix free-asset licence | Art: "Nature Landscapes Free Pixel Art" by Free Game Assets, https://free-game-assets.itch.io/nature-landscapes-free-pixel-art. Animated for Wickglow from the still art |
+| Aurora | `pixel-art/aurora_4k.mp4` | — | CraftPix free-asset licence | Art: the same pack (in the downloaded zip). Animated for Wickglow from the still art |
 
 ## Licence terms
 
@@ -22,4 +22,4 @@ A new scene needs a row here, with its source and licence, before it is added to
 
 **Artist's permission:** Abi Toads gave written permission to use her work in Wickglow ("Go for it! I would be absolutely honored~"). It covers Frog Pond, Snowy Sled and Mossy Branch. The record is a screenshot of the message showing her account name and the date; keep it with the project files.
 
-**CraftPix free-asset licence** (https://craftpix.net/file-licenses/, the licence the pack's creator links from its itch.io page): use in any number of personal and commercial projects, modify, and include in applications and websites; no attribution required. Not allowed: reselling or redistributing the art files themselves, letting users save or export the artwork, or using it to train AI. Wickglow only shows the art as an animated background, which is allowed, and the licence covers the art in every animated version.
+**CraftPix free-asset licence** (https://craftpix.net/file-licenses/, the licence the pack's creator links from its itch.io page): use in any number of personal and commercial projects, modify, and include in applications and websites; no attribution required. Not allowed: reselling or redistributing the art files themselves, letting users save or export the artwork, or using it to train AI. The pack is still PNG images. The Meadow and Aurora videos were animated for Wickglow from that art with the help of an AI assistant (Claude), which the licence allows as a modification; the art was not used to train AI. Wickglow only shows them as backgrounds, which is allowed.
