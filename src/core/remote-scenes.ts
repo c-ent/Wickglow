@@ -9,7 +9,7 @@
 /**
  * The public base URL Android downloads scenes from, with no trailing slash.
  * It is a public address, not a secret. While it is empty the remote scenes
- * are hidden, so the app still works with only the bundled Classic video and
+ * are hidden, so the app still works with only the bundled Rainy Cabin video and
  * the gradients.
  */
 export const SCENE_HOST = 'https://wickglow.vercel.app/scenes';

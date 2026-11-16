@@ -18,7 +18,7 @@ describe('remoteFileOf', () => {
 
   // On web a bundled require() of a video can be an asset object, not a number.
   it('treats a bundled asset object as bundled', () => {
-    const asset = { uri: '/assets/classic.mp4', httpServerLocation: '/assets' } as unknown as number;
+    const asset = { uri: '/assets/rainy_cabin.mp4', httpServerLocation: '/assets' } as unknown as number;
     expect(remoteFileOf(asset)).toBeNull();
     expect(sceneOffered(asset)).toBe(true);
   });

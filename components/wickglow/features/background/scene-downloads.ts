@@ -82,7 +82,7 @@ export function useSceneStatus(source: SceneSource): SceneStatus {
 /**
  * What the video player should load: the bundled module, the downloaded file's
  * URI (Android) or the stream URL (web). Null while a remote scene is not on
- * the device, so the caller can fall back to the bundled Classic video.
+ * the device, so the caller can fall back to the bundled Rainy Cabin video.
  */
 export function useSceneSource(source: SceneSource): number | string | null {
   const status = useSceneStatus(source);

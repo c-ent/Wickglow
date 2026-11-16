@@ -27,7 +27,7 @@ import { formatMegabytes } from '@/src/core/remote-scenes';
 // Exactly one choice across all groups is selected. Phone/tablet use MoodPicker
 // instead, which lists the same nine themes under the same names.
 //
-// Every video but Classic lives on the scene host. On Android a tile that is not
+// Every video but Rainy Cabin lives on the scene host. On Android a tile that is not
 // downloaded yet shows its size; a tap downloads it, then selects it, unless
 // another tile was tapped meanwhile. On web every scene streams, so no tile
 // shows a size. While no host is set the remote tiles are not shown.

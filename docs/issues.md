@@ -10,15 +10,15 @@ Order set by the owner on 2026-11-11: High first (H1 to H6), then Medium (M1 to 
 
 ### C1. Uncleared videos are selectable in the shipping picker
 
-- Status: Fixed 2026-11-15. Cleared: Classic and Cyberpunk Desk (Pixabay; Cyberpunk Desk replaced by a Pixabay video), Frog Pond, Snowy Sled and Mossy Branch (Abi Toads: "Go for it!"). Night Hills removed (owner, 2026-11-15). Every video left in the app is cleared. See the summary at the top of `BACKGROUND_LICENSES.md`.
-- Note: only Classic is bundled in the app. The others are served from `public/scenes/v1/videos/` on the website and downloaded on demand, so the website build is what ships them.
+- Status: Fixed 2026-11-15. Cleared: Rainy Cabin and Cyberpunk Desk (Pixabay; Cyberpunk Desk replaced by a Pixabay video), Frog Pond, Snowy Sled and Mossy Branch (Abi Toads: "Go for it!"). Night Hills removed (owner, 2026-11-15). Every video left in the app is cleared. See the summary at the top of `BACKGROUND_LICENSES.md`.
+- Note: only Rainy Cabin is bundled in the app. The others are served from `public/scenes/v1/videos/` on the website and downloaded on demand, so the website build is what ships them.
 - Where: `components/wickglow/features/background/video-art.ts`, `BACKGROUND_LICENSES.md`
 - Cause (updated 2026-11-12): five Wallper videos are wired into `VIDEOS`, and any build or web export made now ships them. The earlier moewalls.com attribution was wrong; the originals were traced to Wallper. Wallper's terms license uploads to Wallper only, so each rests on Wallper's permission:
   - `cyberpunk_desk`: the owner reports Wallper said it may be used (2026-11-11). Wallper's reply is not on file yet.
   - `frog_lily_pond`: the same Wallper permission; the artist (Abi Toads) has no written permission on file.
   - `snowy_sled`, `mossy_branch`, `night_hills`: not covered by that permission yet, and their Wallper pages and uploaders are not recorded. `night_hills` also has an unidentified watermark.
 - Fix: record each permission and page in `BACKGROUND_LICENSES.md`, or remove the unconfirmed entries from `VIDEOS` and `VIDEO_IDS` before shipping. A saved id that no longer exists already falls back to the gradient.
-- Also: `270983_medium.mp4` (Classic, Pixabay) now has a row, but its Pixabay page URL and artist are not yet checked.
+- Also: `rainy_cabin.mp4` (Rainy Cabin, Pixabay) now has a row, but its Pixabay page URL and artist are not yet checked.
 
 ## High
 

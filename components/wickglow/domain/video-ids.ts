@@ -1,9 +1,9 @@
 // The video backdrop ids (looping videos in assets/backgrounds/videos), kept
 // apart from the files the same way pixel-art-ids.ts is, so saved-state can
 // validate a stored id without pulling video assets into its imports (and
-// tests). 'classic' is the bundled default.
+// tests). 'rainy_cabin' is the bundled default.
 export const VIDEO_IDS = [
-  'classic',
+  'rainy_cabin',
   'cyberpunk_desk',
   'frog_lily_pond',
   'snowy_sled',

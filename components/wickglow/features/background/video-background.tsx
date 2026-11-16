@@ -4,7 +4,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useReducedMotion } from '@/components/wickglow/hooks/use-reduced-motion';
 
 // "Video by MrBones03 from Pixabay" (Pixabay Content License, no attribution needed).
-const DEFAULT_SOURCE: number = require('../../../../assets/backgrounds/videos/270983_medium.mp4');
+const DEFAULT_SOURCE: number = require('../../../../assets/backgrounds/videos/rainy_cabin.mp4');
 
 /**
  * A muted, looping video that fills its parent, used as an alternative to the
