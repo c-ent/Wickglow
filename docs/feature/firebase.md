@@ -1,6 +1,6 @@
 # Firebase: accounts and saving
 
-The plan for adding accounts and cloud saving to Wickglow with Firebase. It covers what is decided, what is set up, the build steps, and what is still open. Status: done (owner, 2026-11-14). Steps 1 to 6 are built, with the read-cost fix (fix B and savings 1 to 4); the rules are deployed and the EAS Firebase vars are set for the development, preview and production environments. The privacy policy deploy and the Play deletion-policy check moved to the Play release steps in progress.md.
+The plan for adding accounts and cloud saving to Wickglow with Firebase. It covers what was decided, how it is set up, and the build steps. Status: done. Steps 1 to 6 are built, with the read-cost fix (fix B and savings 1 to 4); the rules are deployed and the EAS Firebase vars are set for the development, preview and production environments. The privacy policy deploy and the Play deletion-policy check moved to the Play release steps in progress.md.
 
 Related: [progress.md](../agent/progress.md) (current status), [architecture.md](../agent/architecture.md) (rules for `src/data` and auth), [roadmap.md](../agent/roadmap.md) (item 5, Accounts and sync).
 
@@ -14,12 +14,12 @@ This comes before the Google Play release, which is paused until it is done.
 
 | Topic | Decision | Why |
 | --- | --- | --- |
-| Backend | Firebase, replacing the earlier Supabase plan | Owner choice, 2026-11-13 |
-| Plan | Spark (free) | No paid services for now |
+| Backend | Firebase, replacing the earlier Supabase plan | Chosen 2026-11-13 |
+| Plan | Spark (free) | No paid services |
 | Services | Firebase Auth and Cloud Firestore only | Analytics is off: no tracking without a separate decision |
 | SDK | Firebase JS SDK (`firebase` 13.3.0) | One SDK for web and Android, no native module or `google-services.json` |
-| Sign-in methods | Email/Password and Google | Owner choice |
-| What syncs | XP, streaks, tasks and focus history | What "saving" means, per owner |
+| Sign-in methods | Email/Password and Google | Chosen for v1 |
+| What syncs | XP, streaks, tasks and focus history | What "saving" means here |
 | Hosting | Stays on Vercel (`wickglow.vercel.app`), not Firebase Hosting | Android downloads background scenes from Vercel, and Spark's hosting transfer (about 360 MB a day) is too small for the videos |
 | Reward checks | Firestore security rules | Cloud Functions need the paid Blaze plan. Rules can cap how much XP or a streak changes in one write, but cannot recalculate it on a server |
 
@@ -46,39 +46,39 @@ Done:
   - `firebase.ts` (Android) keeps the session in AsyncStorage.
   - `firebase.web.ts` (web) keeps the session in the browser.
 - [x] Docs moved from Supabase to Firebase (AGENTS.md, architecture, conventions, roadmap, progress).
-- [x] `firestore.rules`, `firebase.json` (emulator) and `.firebaserc` (project `wickglow-a70f4`). Dev-only packages for the rules tests: `firebase-tools` and `@firebase/rules-unit-testing` (owner approved, 2026-11-13).
-- [x] `@react-native-google-signin/google-signin` installed with `npx expo install` (owner approved, 2026-11-13).
+- [x] `firestore.rules`, `firebase.json` (emulator) and `.firebaserc` (project `wickglow-a70f4`). Dev-only packages for the rules tests: `firebase-tools` and `@firebase/rules-unit-testing`.
+- [x] `@react-native-google-signin/google-signin` installed with `npx expo install`.
 
 ## Build plan
 
 One step at a time, each checked before the next. Status after the 2026-11-13 build:
 
 1. **Email sign-in.** Built. An Account row in Stats (phone: the Stats view; tablet: after the calendar; desktop: the Progress card) opens a glass sign-in card: email, password (8+ characters, checked in the app), Sign in / Create account, Forgot password. Sign-up sends the verification email and the account works at once; the row shows "Email not confirmed" with Resend until the link is opened (re-checked when the app comes back to the front). Signing out clears the progress from the device (since 2026-11-14, see "Sign out" under Answered). Code: `src/data/auth.ts`, `components/wickglow/features/account/`.
-2. **Google sign-in.** Web built (popup, `google-sign-in.web.ts`). Android code built (`google-sign-in.ts`, `@react-native-google-signin/google-signin` 17.0.0) but not runnable until the owner tasks below are done: it needs a new development build, the Android app with its SHA-1 in Firebase, and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`. Until then the Google button is hidden on Android. The package's Expo config plugin is not in `app.json`: with no options it adds the `google-services` Gradle plugin, which fails without a `google-services.json`, and Android does not need it. iOS would need it with `iosUrlScheme`.
+2. **Google sign-in.** Built on web (popup, `google-sign-in.web.ts`) and Android (`google-sign-in.ts`, `@react-native-google-signin/google-signin` 17.0.0). Android needs the app's SHA-1 in Firebase and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in the build; both are set, and Google sign-in works on the release APK on 2026-11-15. The package's Expo config plugin is not in `app.json`: with no options it adds the `google-services` Gradle plugin, which fails without a `google-services.json`, and Android does not need it. iOS would need it with `iosUrlScheme`.
 3. **Firestore layout and rules.** Built and tested; changed the same day to one collection for the read-cost fix (below). Everything is in `users/{uid}/records`, and the record id says what it is:
-   - `s_{end}-{minutes}`: a finished focus session `{ kind: 's', end, minutes, task, day, at }`. Create-only, 1 to 180 minutes, `end` no later than now plus 5 minutes, the id must match the fields. `task` is the focused task's id or null. `day` (since 2026-11-14, owner) is the local day the session was finished on, on the device that finished it (`2026-11-3`); every device files the session on that day. The rules require it, as a real date within 3 days of `end`; the app drops a stored session without one (owner, 2026-11-15: no backward compatibility).
-   - `t_{taskId}`: a task `{ kind: 't', text, done, doneOn, parentId, date, updatedAt, deleted: false, at }`, or its small tombstone `{ kind: 't', deleted: true, updatedAt, at }`, plus `doneOn` when the task was finished (owner, 2026-11-14: deleting a finished task keeps its credit). A tombstone cannot be edited back into a task; it may gain `doneOn` once and never lose it, and one with `doneOn` is kept, not cleared after 30 days. A task edit carries the time it was made (`updatedAt`), and the rules refuse one older than the stored copy (a delete always wins). A task's open subtask list and its session count are not stored.
+   - `s_{end}-{minutes}`: a finished focus session `{ kind: 's', end, minutes, task, day, at }`. Create-only, 1 to 180 minutes, `end` no later than now plus 5 minutes, the id must match the fields. `task` is the focused task's id or null. `day` (since 2026-11-14) is the local day the session was finished on, on the device that finished it (`2026-11-3`); every device files the session on that day. The rules require it, as a real date within 3 days of `end`; the app drops a stored session without one (no backward compatibility).
+   - `t_{taskId}`: a task `{ kind: 't', text, done, doneOn, parentId, date, updatedAt, deleted: false, at }`, or its small tombstone `{ kind: 't', deleted: true, updatedAt, at }`, plus `doneOn` when the task was finished (deleting a finished task keeps its credit). A tombstone cannot be edited back into a task; it may gain `doneOn` once and never lose it, and one with `doneOn` is kept, not cleared after 30 days. A task edit carries the time it was made (`updatedAt`), and the rules refuse one older than the stored copy (a delete always wins). A task's open subtask list and its session count are not stored.
    - `reset`: `{ kind: 'r', epoch, at }`, the account's reset count, which can only go up.
-   - Every `s_` and `t_` record also carries `epoch`, the reset it was written under, and the rules refuse it unless it matches `reset` (0 before the first reset). Checking costs one document read per write, about 9 reads per user a day. A record from an older reset may be written over (it counts as gone). Added 2026-11-14 (owner approved), before the rules were first deployed, so no stored data needed moving.
+   - Every `s_` and `t_` record also carries `epoch`, the reset it was written under, and the rules refuse it unless it matches `reset` (0 before the first reset). Checking costs one document read per write, about 9 reads per user a day. A record from an older reset may be written over (it counts as gone). Added 2026-11-14, before the rules were first deployed, so no stored data needed moving.
    - `at` must be the server's time of the write. Everything else is denied, and every path checks `request.auth.uid`. Deleting is allowed, since it only lowers progress.
 
-   No XP, level or streak is stored: `src/core/progress-log.ts` rebuilds them from the records. The rules limit what one write can add, not the total (a modified app could still write many sessions), which is fine while nothing compares XP between users. Rules: `firestore.rules`. Tests: `firestore-tests/rules.test.js`, 22 tests against the emulator, including two-user tests and the "only what's new" query (`npm run test:rules`). **Not deployed yet** (owner task).
+   No XP, level or streak is stored: `src/core/progress-log.ts` rebuilds them from the records. The rules limit what one write can add, not the total (a modified app could still write many sessions), which is fine while nothing compares XP between users. Rules: `firestore.rules`. Tests: `firestore-tests/rules.test.js`, 22 tests against the emulator, including two-user tests and the "only what's new" query (`npm run test:rules`). Deployed with `npm run deploy:rules`.
 4. **First sign-in.** Built. An empty account takes the device's progress; an empty device takes the account's; when both have progress, a card shows both (level, XP, minutes, tasks) and keeps only the one picked. Keeping the device raises the account's reset count first (one write, so a reset cut short never leaves the account half-empty); every device then ignores the older records, which are deleted right after (a later full read finishes it if that is cut short), and other devices read everything again once. "Decide later" leaves sync off until the user chooses from the Account row.
 5. **Ongoing sync.** Built. `components/wickglow/domain/account-sync.ts` listens only for records written since the device's last sync and reconciles each confirmed batch (`src/core/sync.ts`). Sessions are kept once by id; tasks: the latest edit wins, a delete wins. A write that never reached the server is sent again, because only confirmed copies count as seen. Finished sessions go up 1.5 s later, task edits 10 s after the last one, and anything waiting goes up at once when the app leaves the foreground. Offline changes stay on the device and go up once the account answers again. The save in `storage.ts` stays the source the app reads from.
-6. **Account deletion by email request.** Built. "Delete account" in the Account row opens an email draft to `encarnacionelher@gmail.com` with the account's email and id. `public/delete-account.html` is the web page, served at `https://wickglow.vercel.app/delete-account` once deployed; that link goes in the Play Console. Still to do: check this against Play's current account-deletion policy before release.
-7. **Release prep.** Owner tasks below, then the Play release steps in progress.md.
+6. **Account deletion by email request.** Built. "Delete account" in the Account row opens an email draft to `encarnacionelher@gmail.com` with the account's email and id. `public/delete-account.html` is the web page, served at `https://wickglow.vercel.app/delete-account`; that link goes in the Play Console, and the Play release steps in progress.md include checking it against Play's account-deletion policy.
+7. **Release prep.** Setup tasks below, then the Play release steps in progress.md.
 
-Done when a second device shows the same XP, streak, tasks and history, and the rules tests pass. The rules tests pass. The two-device case passes in `account-sync.test.ts` (two fake devices on one in-memory account); the owner checked it on two real devices against the live project on 2026-11-15.
+Done when a second device shows the same XP, streak, tasks and history, and the rules tests pass. The rules tests pass. The two-device case passes in `account-sync.test.ts` (two fake devices on one in-memory account); it was checked on two real devices against the live project on 2026-11-15.
 
-## Read and write costs (fix B, owner 2026-11-13)
+## Read and write costs (fix B)
 
-A review found that the first version read every record the user had ever saved each time the app opened: about 2,000 reads per open after a year of 4 sessions a day, so the free plan's 50,000 reads a day would cover only about 9 active users a day after a year. The owner chose fix B plus four savings, all built the same day:
+A review found that the first version read every record the user had ever saved each time the app opened: about 2,000 reads per open after a year of 4 sessions a day, so the free plan's 50,000 reads a day would cover only about 9 active users a day after a year. Fix B was chosen plus four savings, all built the same day:
 
 - **B. Read only what's new.** Every record carries the server's write time (`at`). A device remembers the newest time it has read (`since`) and asks only for records at or after it. A full read happens only on first sign-in, on a new device, and after the account is reset from another device: keeping this device's progress deletes every record and raises the `reset` count, and other devices then read everything once.
 - **1. Don't save what doesn't matter across devices.** Opening a task's subtask list no longer writes. A task's session count is no longer saved after each session; each session record names its task, and every device counts them (`withSessionCounts`). A count from before records existed stays on the device that has it.
 - **2. Wait before sending task edits.** 10 seconds after the last edit, or at once when the app leaves the foreground, so a burst of edits is one write per task. Finished sessions still go up after 1.5 seconds.
 - **3. One collection.** "Anything new?" is one query, and Firestore charges at least one read per query.
-- **4. Clear deleted-task tombstones after 30 days.** A device that comes back after more than 30 days reads everything once instead of only what is new (added 2026-11-14, owner approved), so it still drops a task deleted elsewhere. Before that, such a device could bring the task back.
+- **4. Clear deleted-task tombstones after 30 days.** A device that comes back after more than 30 days reads everything once instead of only what is new (added 2026-11-14), so it still drops a task deleted elsewhere. Before that, such a device could bring the task back.
 
 Estimates for one active user (3 app opens, 4 sessions, about 6 task changes a day), against the free plan's 50,000 reads and 20,000 writes a day for all users:
 
@@ -90,29 +90,29 @@ Estimates for one active user (3 app opens, 4 sessions, about 6 task changes a d
 | Active users a day the free plan covers, after 1 year | about 9 | about 2,000 to 2,500 |
 | A new device after 1 year (once) | about 1,800 reads | about 1,500 reads |
 
-The cost per user no longer grows with history; only setting up a new device, or a device coming back after more than 30 days away (it reads the whole account once), does. Those full reads share the same daily quota: about 34 of them in one day at 1,500 reads each (a year of history) use up all 50,000 reads on their own, so the user estimate above assumes few such returns a day. If the limit is reached, Spark stops syncing until the daily reset (no charge) and the app keeps working on the device. Not built: one record per day of sessions (would make a new device after a year about 400 reads); add it if many users set up new devices.
+The cost per user no longer grows with history; only setting up a new device, or a device coming back after more than 30 days away (it reads the whole account once), does. Those full reads share the same daily quota: about 34 of them in one day at 1,500 reads each (a year of history) use up all 50,000 reads on their own, so the user estimate above assumes few such returns a day. If the limit is reached, Spark stops syncing until the daily reset (no charge) and the app keeps working on the device. If many users set up new devices, one record per day of sessions would cut a year-old account's full read to about 400 reads.
 
 ## Checks run (2026-11-13)
 
 After the read-cost fix (the first build's checks were the same kind, with fewer tests):
 
 - `npx tsc --noEmit`: clean.
-- `npm test`: 283 tests pass (6 more under the web preset). Covers `progress-log.test.ts` (rebuilding XP, streak and history; session counts per task), `sync.test.ts` (a delta and a full read, tombstones and their 30 days, the fields that are not synced, a reset), `account-sync.test.ts` (11 tests with an in-memory account shared by fake devices: two devices end with the same XP, streak, tasks and history; a burst of task edits is one write; opening a subtask list writes nothing; reopening the app with nothing new reads at most 1 record; the keep-which-progress choice and the other device following the reset; signing out; offline), and the save migration in `saved-state.test.ts`.
+- `npm test`: 283 tests pass (6 more under the web preset). Covers `progress-log.test.ts` (rebuilding XP, streak and history; session counts per task), `sync.test.ts` (a delta and a full read, tombstones and their 30 days, the fields that are not synced, a reset), `account-sync.test.ts` (11 tests with an in-memory account shared by fake devices: two devices end with the same XP, streak, tasks and history; a burst of task edits is one write; opening a subtask list writes nothing; reopening the app with nothing new reads at most 1 record; the keep-which-progress choice and the other device following the reset; signing out; offline).
 - `npm run test:rules`: 19 tests pass (2026-11-14, with the reset count checks) on the Firestore emulator.
 - `npx eslint .`: no errors (the 14 warnings are in `components/music-tracks.ts`, from before).
 - `npx expo export --platform web` and `--platform android`: both bundle. The exported page was loaded in headless Chrome and shows the timer.
-- Not run: sign-in against the live project, and an Android device. These are listed in progress.md.
+- On real devices against the live project: sign-in, Google sign-in, sign-out, a second account and two-device sync on Android and desktop Chrome on 2026-11-14 and 2026-11-15.
 
-## Owner tasks
+## Setup tasks
 
 - [x] Firebase: turn on **Google** under Security, Authentication, Sign-in method.
 - [x] Vercel: add the six `EXPO_PUBLIC_FIREBASE_*` variables under Project, Settings, Environment Variables.
-- [x] **Deploy the Firestore rules**: `npx firebase login`, then `npm run deploy:rules`. Done (owner confirmed 2026-11-15).
+- [x] **Deploy the Firestore rules**: `npx firebase login`, then `npm run deploy:rules`. Done, and redeployed with the `day`-required rules.
 - [x] EAS: the six `EXPO_PUBLIC_FIREBASE_*` variables plus `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` are set in the development, preview and production environments (`eas env:list` checked all three on 2026-11-15), so every build profile can reach Firebase.
-- [x] Google on Android (owner confirmed 2026-11-15: `com.cent.wickglow` is registered in Firebase with the EAS SHA-1, and sign-in works on the installed APK). Before Play, add the Play App Signing SHA-1 as a second fingerprint. Original step: register an Android app in Firebase with package `com.cent.wickglow` and the SHA-1 from `eas credentials`; copy the **Web client ID** (Authentication, Sign-in method, Google, Web SDK configuration) into `.env` and EAS as `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (Vercel does not need it: web uses the popup); then make a new development build. Email sign-in works on the current development build; only Google needs the new one.
+- [x] Google on Android (2026-11-15: `com.cent.wickglow` is registered in Firebase with the EAS SHA-1, and sign-in works on the installed APK). Before Play, add the Play App Signing SHA-1 as a second fingerprint. Original step: register an Android app in Firebase with package `com.cent.wickglow` and the SHA-1 from `eas credentials`; copy the **Web client ID** (Authentication, Sign-in method, Google, Web SDK configuration) into `.env` and EAS as `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (Vercel does not need it: web uses the popup); then make a new development build. Email sign-in works on the current development build; only Google needs the new one.
 - [x] Privacy policy: add the account data stored in Firebase (email, account id, focus sessions, daily totals, tasks). Done: `public/privacy.html`, "With an account" (checked 2026-11-15).
 
-## Answered (owner, 2026-11-13)
+## Answered
 
 - **Where sign-in lives:** an Account row in the Stats panel, always available. No prompt that interrupts a session. (Step 1)
 - **Merge rule:** on first sign-in, if the device and the account both have progress, show both and let the user pick which to keep. (Step 4)
@@ -120,11 +120,11 @@ After the read-cost fix (the first build's checks were the same kind, with fewer
 - **What syncs:** progress only (XP, streaks, tasks, history). Themes, timer lengths and sounds stay per device. (Step 3)
 - **Sign-in UI:** tapping the Account row while signed out opens a small glass card over the app with email, password, Sign in / Create account and "Forgot password". The same on phone, tablet and desktop. (Step 1)
 - **Email verification:** Firebase sends a verification link, but the account works right away. The Account row shows "Email not confirmed" until the link is clicked. (Step 1)
-- **Sign out:** changed 2026-11-14 (owner): signing out clears XP, streak, tasks, history and the link to the account from the device; settings, sounds, scenes and the timer settings stay. A running or paused session is reset to idle first (owner, 2026-11-15), so it cannot finish into the next account's progress. If the cleared state cannot be written to storage, the sign-out does not go ahead and a toast says so. Before, the device kept them, and the next account to sign in there took them (an empty account adopts the device's progress). Sign out first sends anything waiting and waits up to 4 s for the account to confirm it; if something is still unsaved (offline, a failed save, or "Decide later"), a card says "Some progress isn't saved to your account yet. Signing out removes it from this device." with Stay signed in and Sign out anyway. Code: `hasUnsaved` (`src/core/sync.ts`), `withoutProgress` (`saved-state.ts`), `AccountSync.forget`, `sign-out-card.tsx`. (Step 1)
+- **Sign out:** changed 2026-11-14: signing out clears XP, streak, tasks, history and the link to the account from the device; settings, sounds, scenes and the timer settings stay. A running or paused session is reset to idle first, so it cannot finish into the next account's progress. If the cleared state cannot be written to storage, the sign-out does not go ahead and a toast says so. Before, the device kept them, and the next account to sign in there took them (an empty account adopts the device's progress). Sign out first sends anything waiting and waits up to 4 s for the account to confirm it; if something is still unsaved (offline, a failed save, or "Decide later"), a card says "Some progress isn't saved to your account yet. Signing out removes it from this device." with Stay signed in and Sign out anyway. Code: `hasUnsaved` (`src/core/sync.ts`), `withoutProgress` (`saved-state.ts`), `AccountSync.forget`, `sign-out-card.tsx`. (Step 1)
 - **Password:** at least 8 characters, checked in the app before sending. (Step 1)
 - **Sync model:** each finished focus session is saved once as its own record (id, end time, minutes). XP, level, streak, quests and history are calculated from that list by `src/core`, never stored as editable totals. Combining devices keeps every session once, matched by id. Tasks: the latest edit to each task wins. Rules make sessions create-only, 1 to 180 minutes, with an end time not in the future. (Steps 3 and 5)
-- **First sign-in merge kept as "user picks"** (re-confirmed after the sync model was chosen): if the device and the account both have progress, show both and keep only the one the user picks. (Step 4)
-- **Progress from before sync:** the device's daily totals upload once, one record per past day (minutes, sessions, tasks), capped at 1,440 minutes a day by the rules. XP is recalculated from them, so it may differ slightly from the old stored total. (Step 4)
+- **First sign-in merge kept as "user picks"** (kept after the sync model was chosen): if the device and the account both have progress, show both and keep only the one the user picks. (Step 4)
+- **Progress from before sync:** the device's daily totals upload once, one record per past day (minutes, sessions, tasks), capped at 1,440 minutes a day by the rules. XP is recalculated from them, so it may differ slightly from the old stored total. (Step 4) Removed 2026-11-15: day-total records are gone and an older save is not converted, since Wickglow keeps no backward compatibility.
 - **Task deleted on one device, edited on another:** the delete wins. (Step 5)
 - **Reward checks:** capping how much XP and the streak can change in one write, in Firestore rules, is enough on the free plan. (Step 3)
 - **Account deletion:** after a 7-day grace period, not instantly. Users request it by email to `encarnacionelher@gmail.com` and the owner deletes the account by hand. No in-app delete button. (Step 6)
@@ -133,12 +133,10 @@ After the read-cost fix (the first build's checks were the same kind, with fewer
 
 None right now.
 
-## Known issues
+## Design limits
 
-- `npm audit` reports 0 vulnerabilities (2026-11-14), through `overrides` in `package.json` for transitive copies in dev-only `firebase-tools` (details in progress.md). Re-check them when `firebase-tools` resolves them itself.
-- `npx expo-doctor` fails one check because 13 Expo packages are behind on minor updates. This was already the case before Firebase.
+- `npm audit` reports 0 vulnerabilities (2026-11-14), through `overrides` in `package.json` for transitive copies in dev-only `firebase-tools` (see `docs/agent/conventions.md`). Re-check them when `firebase-tools` resolves them itself.
 - A device that comes back after more than 30 days (by its own record of its last confirmed read) reads the whole account once (about 1,500 reads after a year), so it does not miss a delete whose tombstone was cleared. A device opened regularly keeps reading only what is new, even if nothing was written for a month.
-- Sessions are filed on the writer's day (`day`, 2026-11-14). Sessions saved before that, or by an app version without it, are still filed by the clock of the device that rebuilds them, so those can still land on another day near midnight in another time zone.
-- Task edits are stamped when they are made (`updatedAt`, from `SyncMeta.edits`), not when sent, and the rules refuse an edit older than the stored copy (a delete always wins); the app counts such a refusal as saved, since the newer edit is already there (owner, 2026-11-14). The order still comes from each device's own clock, so a device whose clock runs ahead can win a clash it should lose, and one whose clock runs behind has its edits refused.
+- Task edits are stamped when they are made (`updatedAt`, from `SyncMeta.edits`), not when sent, and the rules refuse an edit older than the stored copy (a delete always wins); the app counts such a refusal as saved, since the newer edit is already there. The order still comes from each device's own clock, so a device whose clock runs ahead can win a clash it should lose, and one whose clock runs behind has its edits refused.
 - A task edit reaches other devices about 10 seconds later, unless the app is closed or put in the background first.
-- Once linked, XP is rebuilt from the records, so it can differ from the device's old stored total (owner accepted, 2026-11-13). Reopening a task takes its credit back the same way on the device and in a rebuild (owner, 2026-11-14): the task quest and its XP are unclaimed if the day no longer reaches it.
+- Once linked, XP is rebuilt from the records, so it can differ from the device's old stored total. Reopening a task takes its credit back the same way on the device and in a rebuild: the task quest and its XP are unclaimed if the day no longer reaches it.

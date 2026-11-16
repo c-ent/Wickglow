@@ -6,8 +6,8 @@ Read this when starting or planning a feature, or when asked what comes next. Ea
 
 - Build the current item only. Do not start a related one because it looks easy.
 - Resolve the item's Open questions with the owner before writing code. Add any new ones to `progress.md`.
-- Reward rules (XP, drops, quest payouts) follow the `change-progression-rules` skill. New tables follow `add-supabase-table`.
-- When an item ships, move it to Completed in `progress.md` and update `spec.md` so it describes the app as it is.
+- Reward rules (XP, drops, quest payouts) are pure functions in `src/core` with tests, and the Firestore rules must still bound every write.
+- When an item ships, add it to `completed.md` and update `spec.md` so it describes the app as it is.
 
 ## Reward eligibility
 
@@ -15,7 +15,7 @@ Applies to the streak and the four-session quest. Only a focus session of at lea
 
 ## Order
 
-The order was updated on 2026-11-03 and is recorded in `progress.md`. #1, #4 and #8 have shipped (#4 on 2026-11-04). #2 and #3 were removed by the owner on 2026-11-04. #6 and #7 are out. #5, #9, #10 and #11 were dropped by the owner on 2026-11-10.
+The order was updated on 2026-11-03 and is recorded in `progress.md`. #1, #4 and #8 have shipped (#4 on 2026-11-04). #2 and #3 were removed on 2026-11-04. #6 and #7 are out. #5, #9, #10 and #11 were dropped on 2026-11-10.
 
 | #   | Feature                                 | Version | Status                      | Depends on                                                |
 | --- | --------------------------------------- | ------- | --------------------------- | --------------------------------------------------------- |
@@ -24,16 +24,16 @@ The order was updated on 2026-11-03 and is recorded in `progress.md`. #1, #4 and
 | 2   | Unlocks (XP lights the room)            | —       | Removed 2026-11-04          | —                                                         |
 | 3   | Goal-linked quests                      | —       | Removed 2026-11-04          | —                                                         |
 | 4   | Calendar stats                          | v2      | Shipped 2026-11-04          | v1 daily minutes history                                  |
-| 9   | Optional cosmetics or one-time purchase | —       | Out (owner, 2026-11-10)     | —                                                         |
+| 9   | Optional cosmetics or one-time purchase | —       | Out     | —                                                         |
 | 6   | Study pets                              | —       | Out                         | v1 (server drops after #5)                                |
 | 7   | Achievements                            | —       | Out                         | —                                                         |
-| 5   | Accounts and sync                       | v2      | Shipped 2026-11-15 (owner checked two devices) | —                                                         |
-| 10  | Private circles (friends' candles)      | —       | Out (owner, 2026-11-10)     | —                                                         |
-| 11  | Focus rooms                             | —       | Out (owner, 2026-11-10)     | —                                                         |
-| 12  | Landing page                            | v2      | Done (owner, 2026-11-15) | Web build, APK on Google Drive, C1 cleared                |
-| 13  | First-run tour                          | v2      | Shipped 2026-11-15 (owner checked Android and desktop) | —                                                         |
+| 5   | Accounts and sync                       | v2      | Shipped 2026-11-15 (checked on two devices) | —                                                         |
+| 10  | Private circles (friends' candles)      | —       | Out     | —                                                         |
+| 11  | Focus rooms                             | —       | Out     | —                                                         |
+| 12  | Landing page                            | v2      | Done | Web build, APK on Google Drive, C1 cleared                |
+| 13  | First-run tour                          | v2      | Shipped 2026-11-15 (checked on Android and desktop) | —                                                         |
 
-#1, #4, #5, #8, #12 and #13 have shipped (#5, #12 and #13 in November 2026). #2 and #3 were removed. #6 and #7 are out. #9, #10 and #11 were dropped by the owner on 2026-11-10; their sections below are history only. No item is current; the owner picks the next one.
+#1, #4, #5, #8, #12 and #13 have shipped (#5, #12 and #13 in November 2026). #2 and #3 were removed. #6 and #7 are out. #9, #10 and #11 were dropped on 2026-11-10; their sections below are history only. No item is current; the owner picks the next one.
 
 ## v2
 
@@ -50,14 +50,14 @@ Shipped: bundled tracks first, own files appended, all through the one `expo-aud
 
 ### 2. Unlocks (XP lights the room) — removed 2026-11-04
 
-Removed by the owner on 2026-11-04, along with the catalog, the Room panel and the
+Removed on 2026-11-04, along with the catalog, the Room panel and the
 room art it shipped. XP still levels up and still drives the level name in the
 stats surface; it no longer lights extra lights in the room. Kept here only as a
 record of what was built and then taken out; do not rebuild it.
 
 ### 3. Goal-linked quests — removed 2026-11-04
 
-Removed by the owner on 2026-11-04, along with the goal list, the 40 XP reward, and the link from a task to a goal. Tasks remain, now with an optional due date and subtasks. Kept here only as a record of what was built and then taken out; do not rebuild it.
+Removed on 2026-11-04, along with the goal list, the 40 XP reward, and the link from a task to a goal. Tasks remain, now with an optional due date and subtasks. Kept here only as a record of what was built and then taken out; do not rebuild it.
 
 Shipped, then removed: `src/core/goals.ts` held the pure rules. A goal was a title, an optional local date and an optional target in sessions or minutes. At most 3 active goals. A task carried one `goalId`, and a focus session of at least 10 minutes on that task credited the goal. Reaching a target, or closing a goal with no target, granted 40 XP once. The reward-eligibility minimum applied to goals alone and left with them.
 
@@ -101,33 +101,35 @@ Source: the top request, "input our own playlists or songs from YouTube, Spotify
 Terms read 2026-11-03, before the code:
 
 - YouTube (API Services Developer Policies and Required Minimum Functionality): the embedded player stays visible, at least 200px tall here, with autoplay and the IFrame Player API left off. Background playback and separating the audio are forbidden, and Google Play has rejected apps whose WebView keeps YouTube audio after the screen locks. The player is removed when Wickglow leaves the screen. No offline copy.
-- Spotify (Embeds and the Widget Terms): the iframe is Spotify's player, not the Web Playback SDK. Signed out, playback is a short preview. Full tracks need the listener's own Spotify session inside that player, which needs `encrypted-media` on the frame. The widget terms are written for a website the developer controls and require a privacy-policy disclosure that the embed sets cookies. That disclosure is still an open question in `progress.md`. No sign-in is built by Wickglow.
+- Spotify (Embeds and the Widget Terms): the iframe is Spotify's player, not the Web Playback SDK. Signed out, playback is a short preview. Full tracks need the listener's own Spotify session inside that player, which needs `encrypted-media` on the frame. The widget terms are written for a website the developer controls and require a privacy-policy disclosure that the embed sets cookies. That disclosure is in the privacy policy (`public/privacy.html`, streaming section). No sign-in is built by Wickglow.
 - Apple Music (the embeddable player, not MusicKit): `embed.music.apple.com`. Signed out, a short preview. Full tracks need the listener's own Apple Music session inside that player. MusicKit would be a playback SDK and a sign-in, so it is not used.
 - YouTube Music: no embed and no oEmbed. A `music.youtube.com` link is stored and opened. A normal `youtube.com` playlist is the YouTube player.
 
-Shipped: paste a public link. The save stores the link and the service name. The music panel splits Tracks and Streaming, and adding a link opens that service's player immediately. Spotify, YouTube, and Apple Music show that service's player on the scene, so it keeps playing when the panel closes or the ambient mixer opens. The player keeps its default height and cannot be collapsed; the owner removed Minimize on 2026-11-07. On the web, Spotify and Apple Music keep playing in a hidden browser tab. YouTube's frame still leaves when the page is hidden, and on Android and iOS every embed still leaves when the app leaves the screen. YouTube Music opens. Starting an embed pauses the local `expo-audio` player, and closing it can resume. A private or unrecognized link fails with a short message. If the embed cannot play on Android, the player shows an "Open link" button and never opens the service app on its own (changed 2026-11-11). Session-end volume and fade stay on the local player. The timer, XP, and quests stay on the session clock. Pure parsing is in `src/core/stream-links.ts`.
+Shipped, web only, in the desktop layout: paste a public link. The save stores the link and the service name. The Music card splits Tracks and Streaming, and adding a link opens that service's player immediately. Spotify, YouTube, and Apple Music show that service's player on the scene, so it keeps playing when the card closes or the ambient mixer opens. The player keeps its default height and cannot be collapsed. Spotify and Apple Music keep playing in a hidden browser tab; YouTube's frame leaves while the page is hidden. YouTube Music opens. Starting an embed pauses the local `expo-audio` player, and closing it can resume. A private or unrecognized link fails with a short message. If an embed cannot play, the player shows an "Open link" button and never opens the service on its own. Session-end volume and fade stay on the local player. The timer, XP, and quests stay on the session clock. Pure parsing is in `src/core/stream-links.ts`.
 
-Open questions: whether links can be shared in rooms. The privacy-policy line Spotify's widget terms ask for, before release.
+Android and iOS have no Streaming view and no embed, and neither do phone and tablet widths on the web (see `spec.md`).
 
-### 12. Landing page — done (added and closed by the owner 2026-11-15)
+Open questions: whether links can be shared in rooms (decided with the rooms item).
 
-Source: the owner, for the portfolio link and ahead of the Play listing.
+### 12. Landing page — done (added and closed 2026-11-15)
+
+Purpose: a portfolio link, and a home page ahead of the Play listing.
 
 Decided 2026-11-15:
 
-- On the web, `/` is the landing page (`app/index.web.tsx`, UI in `components/landing/`) and the web app is at `/app` (`app/app.tsx`). On Android and iOS, `/` stays the app (`app/index.tsx`). A visitor who has used the web app before is sent from `/` to `/app` by a script in the page head (`components/landing/returning-visitor.ts`); `/?home` shows the landing page anyway; the web app links there from an "About Wickglow" line at the end of Timer settings, opened in a new tab so a running session keeps going (owner, 2026-11-15). `/download`, the first address, redirects to `/` (owner, 2026-11-15). The web build uses `"output": "static"`, so each route is pre-rendered to a static HTML page and reuses the theme tokens and fonts.
-- `/` is the page to link to (portfolio, posts, the Play listing's website field). The first plan kept the app at `/` with no redirect; the owner moved the landing page to `/` the same day so search results show it.
-- The main button downloads the Android APK, hosted on the owner's Google Drive at first. `APK_URL` in `components/landing/content.ts` is the owner's Drive share link (set 2026-11-15).
+- On the web, `/` is the landing page (`app/index.web.tsx`, UI in `components/landing/`) and the web app is at `/app` (`app/app.tsx`). On Android and iOS, `/` stays the app (`app/index.tsx`). A visitor who has used the web app before is sent from `/` to `/app` by a script in the page head (`components/landing/returning-visitor.ts`); `/?home` shows the landing page anyway; the web app links there from an "About Wickglow" line at the end of Timer settings, opened in a new tab so a running session keeps going. `/download`, the first address, redirects to `/`. The web build uses `"output": "static"`, so each route is pre-rendered to a static HTML page and reuses the theme tokens and fonts.
+- `/` is the page to link to (portfolio, posts, the Play listing's website field). The first plan kept the app at `/` with no redirect; the landing page moved to `/` the same day so search results show it.
+- The main button downloads the Android APK from a Google Drive folder. `APK_URL` in `components/landing/content.ts` is the folder link, so the APK inside can be replaced without changing it.
 - It goes live before the Google Play badge exists. When the Play listing is live, the badge is added and the APK button can be dropped or kept.
-- Screenshots: three desktop shots in one swipeable gallery ("See it in action") inside a browser-style window (three dots and an address pill showing `GALLERY_ADDRESS`, arrows, scene tabs with a one-line caption per slide, a warm glow beneath), the same 1040 column as the other sections (it was 1200 wide at first; the owner asked on 2026-11-15 for it to line up), the screen area the same shape as the screenshots, Moonlit first (`GALLERY` in `content.ts`). The phone shot sits beside the Android download in the download card (`PHONE_SHOT`). WebP files are in `assets/landing/`.
+- Screenshots: three desktop shots in one swipeable gallery ("See it in action") inside a browser-style window (three dots and an address pill showing `GALLERY_ADDRESS`, arrows, scene tabs with a one-line caption per slide, a warm glow beneath), the same 1040 column as the other sections (it was 1200 wide at first), the screen area the same shape as the screenshots: the pixel-art Meadow, then the Tasks and Music panels (`GALLERY` in `content.ts`). The phone shot sits beside the Android download in the download card (`PHONE_SHOT`). WebP files are in `assets/landing/`.
 
-Design: the owner's mockup (2026-11-15). A near-black violet page with Amber glows and the flame colour as the only accent. Nav (Features, Android, Open the app); hero "Get the work done." with four floating sample widgets (timer, level, streak, ambient mix; sample numbers, drawn only on windows 1180 wide or more); a slim promise bar (Free, no ads or tracking, no account needed, no harsh alarm); a screenshot section; a "What's inside" bento grid whose pictures are the app's own components fed sample values (`components/landing/app-pieces.tsx`: `Candle`, `LevelCardView`, the task row pieces, the mixer styles, `DayCell`; the app exports `CheckBox`, `FocusButton`, `taskListStyles`, `DayCell` and `LevelCardView` for this); a download card; footer links to `/privacy`, `/delete-account` and the GitHub repo. Page-only colours are in `components/landing/palette.ts`; the rest come from the tokens.
+Design: based on a mockup (2026-11-15). A near-black violet page with Amber glows and the flame colour as the only accent. Nav (Features, Android, Open the app); hero "Get the work done." with four floating sample widgets (timer, level, streak, ambient mix; sample numbers, drawn only on windows 1180 wide or more); a slim promise bar (Free, no ads or tracking, no account needed, no harsh alarm); a screenshot section; a "What's inside" bento grid whose pictures are the app's own components fed sample values (`components/landing/app-pieces.tsx`: `Candle`, `LevelCardView`, the task row pieces, the mixer styles, `DayCell`; the app exports `CheckBox`, `FocusButton`, `taskListStyles`, `DayCell` and `LevelCardView` for this); a download card; footer links to `/privacy`, `/delete-account` and the GitHub repo. Page-only colours are in `components/landing/palette.ts`; the rest come from the tokens.
 
 C1 in `docs/issues.md` (the unconfirmed videos) was fixed on 2026-11-15, so it no longer blocks a public launch. The APK link is in (2026-11-15).
 
 ### 13. First-run tour — shipped 2026-11-15
 
-Source: the owner. New users should be shown where the main parts of the app are.
+Purpose: new users should be shown where the main parts of the app are.
 
 Behavior:
 
@@ -145,13 +147,13 @@ Behavior:
   Progress and tasks were one step in the first plan; they are two because they sit in different places on every layout.
 - Shown once, with Back and Skip on every step and Escape on the web. The last step says it can be replayed from Timer settings, where a "Show tour again" line sits just above "About Wickglow" (on every platform).
 
-Decided 2026-11-15 (owner):
+Decided 2026-11-15:
 
 - Anyone who has not seen it on this device sees it, new or existing users.
 - "Seen" is stored on the device only (`wickglow:tour` in AsyncStorage), never synced. Finishing or skipping stores it. If storage cannot be read, the tour does not start.
 - On phone, the Music and Ambient steps both point at the Sounds tab.
 
-Changed 2026-11-16 (owner): each step opens its panel while it shows. On desktop the Music, Ambient mixer, Scenes, Tasks and Progress panels open and the step lights both the panel and the button that opens it (its dock button; for Progress, the top pills), so the user sees where to open it later (`useTourButton`). A card with no room beside a wide panel sits against the window edge on the roomier side, moved up or down off the lit button. On phone the matching sheet tab opens behind the dim (Sounds on Tracks, then on Ambient, Mood, Tasks, Stats) and the step still points at the tab button (Ambient: the Ambient button). The Timer step closes the panel or sheet, and so does the tour's end. The tablet shows every part in its side column already, so nothing changes there.
+Changed 2026-11-16: each step opens its panel while it shows. On desktop the Music, Ambient mixer, Scenes, Tasks and Progress panels open and the step lights both the panel and the button that opens it (its dock button; for Progress, the top pills), so the user sees where to open it later (`useTourButton`). A card with no room beside a wide panel sits against the window edge on the roomier side, moved up or down off the lit button. On phone the matching sheet tab opens behind the dim (Sounds on Tracks, then on Ambient, Mood, Tasks, Stats) and the step still points at the tab button (Ambient: the Ambient button). The Timer step closes the panel or sheet, and so does the tour's end. The tablet shows every part in its side column already, so nothing changes there.
 
 Built 2026-11-15: steps and words in `src/core/tour.ts`; the provider, overlay and placement in `components/wickglow/features/tour/`. Each layout marks its parts with `useTourTarget`, opens the step's panel or sheet tab (`TOUR_PANEL` in `desktop.tsx`, `TOUR_SHEET` in `mobile.tsx`) and holds off zen while the tour runs. The tablet scrolls whichever column holds the part to the top and puts the card to its left.
 
@@ -159,17 +161,17 @@ Built 2026-11-15: steps and words in `src/core/tour.ts`; the provider, overlay a
 
 ### 9. Optional cosmetics or one-time purchase
 
-Out as of 2026-11-10 by owner decision. Kept here only as a record; do not build it.
+Out as of 2026-11-10. Kept here only as a record; do not build it.
 
 The core timer, tasks, sounds and progression stay free, because reviewers complain about paywalled features. Ask first before anything paid. Open: model, store billing, what counts as cosmetic.
 
 ## v4 (dropped: multiplayer)
 
-Out as of 2026-11-10 by owner decision: private circles and focus rooms. Their sections below are kept only as a record of what was proposed; do not build them. Accounts and sync (#5) is back in the plan as of 2026-11-13.
+Out as of 2026-11-10: private circles and focus rooms. Their sections below are kept only as a record of what was proposed; do not build them. Accounts and sync (#5) came back on 2026-11-13 and shipped on 2026-11-15.
 
 ### 5. Accounts and sync
 
-Back in the plan as of 2026-11-13 (owner) and the current feature, ahead of the Play release. Uses Firebase on the Spark plan.
+Shipped 2026-11-15, ahead of the Play release. Uses Firebase on the Spark plan.
 
 Behavior:
 
@@ -203,7 +205,7 @@ Open questions: who becomes host when nobody is named. Rules for removing member
 
 ## Not planned
 
-iOS release, app blocking, flashcards, planners, notes (one competitor is called a "Notion wannabe"), ads, tracking SDKs, extra languages, study pets (out as of 2026-11-03; see the Evidence table for the request it would have met), achievements (out as of 2026-11-03).
+App blocking, flashcards, planners, notes (one competitor is called a "Notion wannabe"), ads, tracking SDKs, extra languages, study pets (out as of 2026-11-03; see the Evidence table for the request it would have met), achievements (out as of 2026-11-03).
 
 ## Evidence
 
@@ -222,7 +224,7 @@ Source: a competitor's feature request board and a gap analysis, shared by the p
 | Transfer host                             | 38    | Active       | v4 #11                      |
 
 Gaps to beat, from the same research:
-| Gap | Lumiere answer | Lands in |
+| Gap | Wickglow answer | Lands in |
 | --- | --- | --- |
 | No reliable Android app with a timer that survives a locked screen | Timestamp timer and scheduled notification | v1 |
 | Progress gives nothing | XP levels and daily quests | v1 |
@@ -230,6 +232,6 @@ Gaps to beat, from the same research:
 | No live accountability among friends | Friends' candles | v4 #10 |
 | Paywalled features, feature creep | Free core, no notes or planner | principle |
 | Web apps need a connection | Local-first, bundled audio, own files offline | v1, v2 #1 |
-| Generic filler music | Original or commissioned lofi | v1 |
+| Generic filler music | Licensed lofi tracks (Pixabay) | v1 |
 
 The first gap is research, not marketing copy. Do not write "no reliable Android app" in store or site text until the Play Store has been checked, and prefer a feature claim even then.
