@@ -689,7 +689,8 @@ function Gallery({ slides }: { slides: readonly GallerySlide[] }) {
   }, [index, running]);
 
   return (
-    <View ref={wrapRef} {...hoverProps}>
+    // Keyboard focus on a gallery control is the visitor taking over, so autoplay stops for good.
+    <View ref={wrapRef} {...hoverProps} {...({ onFocus: () => setAuto(false) } as object)}>
       {/* Warm light under the window, as if the screen glows onto the desk. */}
       <View style={styles.galleryGlow} pointerEvents="none" />
       <View style={styles.mac}>
@@ -789,7 +790,8 @@ function Gallery({ slides }: { slides: readonly GallerySlide[] }) {
           );
         })}
       </View>
-      <Text style={styles.galleryCaption} aria-live="polite">
+      {/* Autoplay changes are not announced; a slide the visitor picks is. */}
+      <Text style={styles.galleryCaption} aria-live={running ? 'off' : 'polite'}>
         {slides[index]?.caption}
       </Text>
     </View>
