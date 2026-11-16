@@ -47,7 +47,7 @@ import {
 } from './content';
 import { CalendarNotes, CalendarPreview, CandlesPreview, LevelPreview, MixerPreview, SyncPreview, TasksPreview } from './app-pieces';
 import { land } from './palette';
-import { APP_PATH } from './returning-visitor';
+import { APP_PATH, LANDING_HOME_PATH } from './returning-visitor';
 import { SAMPLE_LEVEL, useIsClient, web } from './web-helpers';
 
 // The web landing page at `/` (roadmap #12); the web app is at /app. The static export renders
@@ -193,10 +193,12 @@ export function LandingPage() {
       <View style={[styles.glow, styles.glowRight]} pointerEvents="none" />
 
       <View style={styles.nav}>
-        <View style={styles.brand}>
+        {/* The logo goes back to the top of the landing page. `/?home`, so a
+            returning visitor is not sent on to the app. */}
+        <Anchor href={LANDING_HOME_PATH} style={styles.brand}>
           <LogoMark size={28} />
           <Text style={styles.brandText}>Wickglow</Text>
-        </View>
+        </Anchor>
         <View style={styles.navRight}>
           {compact ? null : (
             <View style={styles.navLinks}>
@@ -337,10 +339,10 @@ export function LandingPage() {
 
       <Reveal style={[styles.footer, compact && styles.footerCompact]}>
         <View style={[styles.footerBrand, compact && styles.footerBrandCompact]}>
-          <View style={styles.brand}>
+          <Anchor href={LANDING_HOME_PATH} style={styles.brand}>
             <LogoMark size={24} />
             <Text style={styles.footerName}>Wickglow</Text>
-          </View>
+          </Anchor>
           <Text style={styles.footerTagline}>A calm lofi Pomodoro study timer</Text>
         </View>
         <View style={[styles.footerLinks, compact && styles.footerLinksCompact]}>
