@@ -34,7 +34,7 @@ export function MoodPicker({ video = false }: { video?: boolean }) {
           );
         })}
         {video ? (
-          <Pressable accessibilityRole="button" accessibilityState={{ selected: videoBg !== null }} accessibilityLabel="Video background" onPress={() => setVideoBg('classic')} style={[styles.moodBtn, videoBg && { borderColor: colors.textPrimary }]}>
+          <Pressable accessibilityRole="button" accessibilityState={{ selected: videoBg !== null }} accessibilityLabel="Video background" onPress={() => setVideoBg('rainy_cabin')} style={[styles.moodBtn, videoBg && { borderColor: colors.textPrimary }]}>
             {/* While the video loads, a spinner takes the dot's place. */}
             {loading?.startsWith('video:') && !reduced ? (
               <ActivityIndicator size="small" color={colors.textPrimary} accessibilityLabel="Loading" />

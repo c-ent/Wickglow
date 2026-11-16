@@ -1,8 +1,8 @@
 # Background Video Attribution
 
-This project uses third-party video assets for full-screen ambient backgrounds: Classic is bundled from `assets/backgrounds/videos/`, the rest are served from `public/scenes/v1/videos/`. As of 2026-11-15 every video in the app is cleared; the dated status notes further down are history.
+This project uses third-party video assets for full-screen ambient backgrounds: Rainy Cabin is bundled from `assets/backgrounds/videos/`, the rest are served from `public/scenes/v1/videos/`. As of 2026-11-15 every video in the app is cleared; the dated status notes further down are history.
 
-**Summary (2026-11-15).** Cleared: Classic and Cyberpunk Desk (Pixabay), Frog Pond, Snowy Sled and Mossy Branch (Abi Toads' permission), Meadow and Aurora (CraftPix). `night_hills.mp4` (MoeWalls, a night version of the Windows XP "Bliss" hills with a watermark, no licence from the creator) was removed on 2026-11-15 at the owner's request: out of the app, the site and `original/`.
+**Summary (2026-11-15).** Cleared: Rainy Cabin and Cyberpunk Desk (Pixabay), Frog Pond, Snowy Sled and Mossy Branch (Abi Toads' permission), Meadow and Aurora (CraftPix). `night_hills.mp4` (MoeWalls, a night version of the Windows XP "Bliss" hills with a watermark, no licence from the creator) was removed on 2026-11-15 at the owner's request: out of the app, the site and `original/`.
 
 ## Scene loops (2026-11-11 batch)
 
@@ -54,5 +54,5 @@ Pixabay Content License (https://pixabay.com/service/license-summary/): free for
 
 | File | Length | License | Source / artist |
 | :--- | :----- | :------ | :--------------- |
-| `270983_medium.mp4` (the "Classic" scene, bundled) | Not recorded | **Cleared:** Pixabay Content License | "Live Wallpaper Cozy Cabin Rainy Day" by MrBones03: https://pixabay.com/videos/live-wallpaper-cozy-cabin-rainy-day-270983/ (page and artist confirmed by the owner, 2026-11-15) |
+| `rainy_cabin.mp4` (the "Rainy Cabin" scene, bundled) | Not recorded | **Cleared:** Pixabay Content License | "Live Wallpaper Cozy Cabin Rainy Day" by MrBones03: https://pixabay.com/videos/live-wallpaper-cozy-cabin-rainy-day-270983/ (page and artist confirmed by the owner, 2026-11-15) |
 | `cyberpunk_desk_rain.mp4` (the "Cyberpunk Desk" scene, served from `public/scenes/v1/videos/`) | 21s | **Cleared:** Pixabay Content License | Pixabay video 150883 by `u_gm5v89x1on`: https://pixabay.com/videos/computers-office-desk-windows-rain-150883/ (from the owner, 2026-11-15). Source download: `assets/backgrounds/videos/original/cyberpunkreplacement.mp4` (3840x2160, 30fps). Encoded 2026-11-15 to 1080p H.264 High, CRF 20, preset slow, 30fps, no audio, faststart (5.4MB); thumbnail is the frame at 1s, 480x270. Replaces the Wallper "Cyber Hacker" video under the same scene id, at a new path so phones that downloaded the old file fetch this one |
