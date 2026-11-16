@@ -2,7 +2,7 @@
 
 Wickglow is a calm focus timer. You light a candle, study while it burns down, and take a break when it goes out. Lofi music and ambient sounds play while you work, and every focus minute earns XP toward your next level.
 
-It runs on Android and in a web browser. You don't need an account.
+It runs on Android and in a web browser at <https://wickglow.vercel.app>. You don't need an account.
 
 ## Contents
 
@@ -20,8 +20,8 @@ It runs on Android and in a web browser. You don't need an account.
 
 ## Your first session
 
-1. Open Wickglow. The first time, a short tour points out where everything is. Tap **Next** to follow it, or **Skip**.
-2. Tap the candle, or **Light the candle**. A 25-minute focus session starts.
+1. Open Wickglow. The first time, a short tour points out where everything is. Tap **Show me around** to follow it, or **Skip the tour**.
+2. Tap the candle, or **Light the candle** (**Start** on the desktop layout). A 25-minute focus session starts.
 3. Study. After a few seconds without a touch, the screen fades so only the candle and the time stay visible. Tap anywhere to bring everything back.
 4. When the session ends, the flame dims, a soft chime plays and you get a notification. You earn XP and see a short message.
 5. Tap **Start break** to begin your break, or **Later** to start it when you're ready.
@@ -57,7 +57,7 @@ A reset or skipped focus session earns nothing.
 ### Other timer settings
 
 - **Show tour again**: replays the short tour that points out the timer, music, ambient sounds, scenes, tasks and progress. It shows once on its own the first time you open Wickglow on a device.
-
+- **About Wickglow** (web only): opens the Wickglow home page in a new tab, so a running session keeps going.
 - **Start the next session automatically**: when a session ends, the next one starts on its own.
 - **Hide the interface while I focus**: the fade during focus. Turn it off if you'd rather see everything all the time.
 - **Music at session end**: what your music does when a focus session ends.
@@ -177,7 +177,7 @@ With an account, your XP, level, streak, tasks and focus history stay the same o
 
 ### Signing in
 
-Open **Stats** and find the **Account** row. Tap **Sign in**, then either:
+Open **Stats** (the **Progress** card on the desktop layout) and find the **Account** row. Tap **Sign in**, then either:
 
 - enter your email and a password (at least 8 characters) and tap **Sign in** or **Create account**, or
 - tap **Continue with Google**.
@@ -208,7 +208,7 @@ The Account row shows where your progress stands:
 
 ### Signing out
 
-Signing out removes your progress (XP, streak, tasks and history) from that device and keeps your settings. Your progress is still safe in your account. If some changes haven't reached your account yet, Wickglow warns you first. You can then stay signed in until they sync, or sign out anyway and lose them.
+Signing out removes your progress (XP, streak, tasks and history) from that device and keeps your settings. Your progress is still safe in your account. A session that is running or paused is reset first, so it can't count toward the next account that signs in there. If some changes haven't reached your account yet, Wickglow warns you first. You can then stay signed in until they sync, or sign out anyway and lose them.
 
 ### Deleting your account
 

@@ -10,7 +10,8 @@ A walkthrough for people working on the Wickglow code. It explains how the parts
 | [agent/architecture.md](agent/architecture.md) | Folder boundaries, storage model, sync, auth, invariants |
 | [agent/conventions.md](agent/conventions.md) | Code conventions the linter can't enforce |
 | [agent/ui.md](agent/ui.md) | Tokens, moods, typography, per-layout patterns |
-| [agent/progress.md](agent/progress.md) | What is being built now, and open questions |
+| [agent/progress.md](agent/progress.md) | What is being built now |
+| [agent/completed.md](agent/completed.md) | Record of finished work |
 | [agent/roadmap.md](agent/roadmap.md) | Later work. Specs only, not permission to build |
 | [feature/firebase.md](feature/firebase.md) | Accounts and sync: decisions, Firestore layout, read costs |
 | [user-guide.md](user-guide.md) | The app from a user's point of view |
@@ -176,7 +177,7 @@ The web app is deployed to Vercel at <https://wickglow.vercel.app>. The export c
 
 Firestore rules are deployed separately with `npm run deploy:rules`, which needs the owner's `firebase login`.
 
-The current Google Play checklist is in [progress.md](agent/progress.md#google-play-deployment).
+The Google Play release is planned for later. Its checklist is in [progress.md](agent/progress.md#google-play-deployment).
 
 ## Pitfalls
 
@@ -186,6 +187,6 @@ The current Google Play checklist is in [progress.md](agent/progress.md#google-p
 - **`+html.tsx`** must render `headNodes` and `bodyNodes`, or the exported web page has no scripts and stays on the loading screen.
 - **SFX file names are case-sensitive.** Keep `chime.mp3` (lower case, which Android notification sounds require) and `SessionEndChime.MP3` exactly as named. Metro resolves paths case-sensitively, so a file that only differs in case breaks `npx expo export`, even though Windows shows it as the same file.
 - **Scene files** in `public/scenes/` carry a version folder and a byte size in the catalog. A re-encoded or replaced file needs a new path and its new size: otherwise the download size check rejects it, and phones that already hold the old file keep playing it. On launch the app deletes downloads that no scene uses any more.
-- **Uncleared videos.** Some background videos aren't cleared for distribution yet (issue C1 in [issues.md](issues.md)). Check [BACKGROUND_LICENSES.md](../BACKGROUND_LICENSES.md) before wiring in a scene.
+- **Video licences.** Every background video in the app is cleared and recorded in [BACKGROUND_LICENSES.md](../BACKGROUND_LICENSES.md). A new scene needs its row there, with its source and licence, before it is wired in.
 - **`npm audit fix --force`** downgrades Firebase. The `overrides` in `package.json` already handle the reported issues.
 - **`.agents/skills/`** files are hash-pinned in `skills-lock.json`. Local edits get reverted.

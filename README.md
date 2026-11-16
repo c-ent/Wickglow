@@ -2,6 +2,8 @@
 
 Calm lofi Pomodoro study app with XP and streaks. Android and web from one Expo codebase.
 
+Try it in the browser at <https://wickglow.vercel.app>. The Android APK is linked from the same page.
+
 ## Requirements
 
 - Node 22.13+, 24.3+ or 26. Odd-numbered Node versions are unsupported.
@@ -36,8 +38,10 @@ Run the build, typecheck and tests before finishing a change.
 ## Project layout
 
 - `app/`: Expo Router routes. Thin files that render a screen.
-- `components/wickglow/`: the UI, grouped by feature.
+- `components/wickglow/`: the app UI, grouped by feature.
+- `components/landing/`: the web landing page at `/` (the web app is at `/app`).
 - `src/core/`: pure logic — timer math, XP, levels, streaks, quests. No React or Expo imports.
+- `src/data/`: the only code that talks to Firebase (optional accounts and sync).
 - `src/theme/`: color, font and radius tokens.
 - `assets/audio/`: third-party audio. Read `MUSIC_LICENSES.md` before adding audio; every bundled file is covered there, and all of it is cleared.
 
@@ -48,7 +52,7 @@ Run the build, typecheck and tests before finishing a change.
 
 Start with [`AGENTS.md`](AGENTS.md) for commands, conventions and boundaries. The design and planning docs live in [`docs/agent/`](docs/agent/):
 
-- [`progress.md`](docs/agent/progress.md): current status and open questions. Read this first in a new session.
+- [`progress.md`](docs/agent/progress.md): current status. Read this first in a new session. Finished work is recorded in [`completed.md`](docs/agent/completed.md).
 - [`spec.md`](docs/agent/spec.md): the v1 feature spec.
 - [`roadmap.md`](docs/agent/roadmap.md): v2 and v3 plans.
 - [`architecture.md`](docs/agent/architecture.md): data flow, storage, auth and folder boundaries.
@@ -57,3 +61,5 @@ Start with [`AGENTS.md`](AGENTS.md) for commands, conventions and boundaries. Th
 ## Third-party assets
 
 All bundled audio is third-party and cleared for app distribution. The nine ambient loops and the two sound effects are CC0; the fourteen lofi tracks are Pixabay under the Pixabay Content License. Neither licence requires attribution or a credits screen, and both allow commercial use inside the app. Per-file licences are in [`MUSIC_LICENSES.md`](MUSIC_LICENSES.md) — read it before adding audio.
+
+Every background video is cleared too (Pixabay, CraftPix, or the artist's written permission). Per-file records are in [`BACKGROUND_LICENSES.md`](BACKGROUND_LICENSES.md).
