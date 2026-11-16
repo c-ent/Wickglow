@@ -84,9 +84,9 @@ Shipped one at a time from `roadmap.md`: your own music files, streaming playlis
 - Focus rooms, chat, friends and leaderboards. Dropped on 2026-11-10.
 - Study pets and achievements are out. Goal-linked quests were removed. The calendar view is v2.
 - A coin currency, loot boxes, or paid cosmetics.
-- iOS release, app blocking, flashcards, planners, notes, a Spotify, Google, or Apple sign-in or playback SDK for music, extra languages. (Google sign-in for Wickglow accounts is approved, see `docs/feature/firebase.md`.)
+- App blocking, flashcards, planners, notes, a Spotify, Google, or Apple sign-in or playback SDK for music, extra languages. (Google sign-in for Wickglow accounts is approved, see `docs/feature/firebase.md`.)
 - Ads, tracking SDKs, payments, and any paywall on the core timer.
-- A marketing site inside this app. The site is a separate static project (Astro or plain HTML) for the pitch, store links, and the privacy policy. The Expo web build is the app, not that site.
+- A marketing site in a separate project. The landing page is part of this Expo project: `app/index.web.tsx` and `components/landing/` serve it at `/` on the web, the web app is at `/app`, and `public/` holds the privacy policy and account deletion pages (roadmap #12).
 
 ## Success criteria
 1. A fresh install can run a full focus session with no account and award the correct XP.
