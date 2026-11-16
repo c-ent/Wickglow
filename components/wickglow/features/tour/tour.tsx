@@ -7,9 +7,10 @@ import { TourOverlay } from './tour-overlay';
 /**
  * The first-run tour (roadmap #13). `TourProvider` wraps the current layout
  * and draws the overlay on top of it. A layout marks the parts a step points at
- * with `useTourTarget`, and closes its panels and holds off zen while
- * `useTour().active` is true. The tablet layout also scrolls its side column
- * to the part being shown (`useTourRevealer`).
+ * with `useTourTarget`, holds off zen while `useTour().active` is true, and
+ * opens the panel or sheet tab of `useTour().step` (closing it when the tour
+ * ends). The tablet layout scrolls its side column to the part being shown,
+ * and the others wait for the opened panel to settle (`useTourRevealer`).
  *
  * Whether the tour was seen is kept on this device only, under its own key,
  * never in the synced saved state: it starts once on a device that has nothing
@@ -27,6 +28,7 @@ interface TourValue {
   step: TourStep['id'] | null;
   start: () => void;
   register: (target: TourTarget, node: TourNode | null) => void;
+  registerButton: (target: TourTarget, node: TourNode | null) => void;
   setRevealer: (revealer: Revealer | null) => void;
 }
 
@@ -42,6 +44,8 @@ export function TourProvider({ layout, children }: { layout: TourLayout; childre
   // The step on screen, or null while no tour runs.
   const [index, setIndex] = useState<number | null>(null);
   const nodes = useRef(new Map<TourTarget, TourNode>());
+  // The buttons that open a step's part, lit beside it (desktop dock buttons).
+  const buttons = useRef(new Map<TourTarget, TourNode>());
   const revealer = useRef<Revealer | null>(null);
   // Set by any start, step or skip, so the launch check (still reading storage)
   // can no longer start the tour over what the user already did.
@@ -88,16 +92,24 @@ export function TourProvider({ layout, children }: { layout: TourLayout; childre
     if (node) nodes.current.set(target, node);
     else nodes.current.delete(target);
   }, []);
+  const registerButton = useCallback((target: TourTarget, node: TourNode | null) => {
+    if (node) buttons.current.set(target, node);
+    else buttons.current.delete(target);
+  }, []);
   const setRevealer = useCallback((fn: Revealer | null) => {
     revealer.current = fn;
   }, []);
   const nodeFor = useCallback((target: TourTarget) => nodes.current.get(target) ?? null, []);
+  const buttonFor = useCallback((target: TourTarget) => buttons.current.get(target) ?? null, []);
   const reveal = useCallback((node: TourNode) => revealer.current?.(node) ?? Promise.resolve(), []);
 
   const active = index !== null;
   const step = index !== null ? steps[index] : null;
   const stepId = step?.id ?? null;
-  const value = useMemo(() => ({ active, step: stepId, start, register, setRevealer }), [active, register, setRevealer, start, stepId]);
+  const value = useMemo(
+    () => ({ active, step: stepId, start, register, registerButton, setRevealer }),
+    [active, register, registerButton, setRevealer, start, stepId],
+  );
 
   return (
     <TourContext.Provider value={value}>
@@ -109,6 +121,7 @@ export function TourProvider({ layout, children }: { layout: TourLayout; childre
           index={index}
           count={steps.length}
           nodeFor={nodeFor}
+          buttonFor={buttonFor}
           reveal={reveal}
           onNext={onNext}
           onBack={back}
@@ -133,7 +146,19 @@ export function useTour(): { active: boolean; step: TourStep['id'] | null; start
  * `collapsable={false}` so Android keeps it to measure.
  */
 export function useTourTarget(...targets: TourTarget[]) {
-  const register = useContext(TourContext)?.register;
+  return useRegistrar(useContext(TourContext)?.register, targets);
+}
+
+/**
+ * A ref for the button that opens a step's part (a desktop dock button). The
+ * tour lights it beside the part, so the user sees where to open it later.
+ * Give the view `collapsable={false}`.
+ */
+export function useTourButton(...targets: TourTarget[]) {
+  return useRegistrar(useContext(TourContext)?.registerButton, targets);
+}
+
+function useRegistrar(register: TourValue['register'] | undefined, targets: TourTarget[]) {
   const key = targets.join(',');
   return useCallback(
     (node: TourNode | null) => {

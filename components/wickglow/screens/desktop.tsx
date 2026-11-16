@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sessionFace } from '@/src/core/session-face';
-import type { TourTarget } from '@/src/core/tour';
+import type { TourStep, TourTarget } from '@/src/core/tour';
 import { colors, fonts, radius, rounded } from '@/src/theme/tokens';
 import { darkGlass, glassPanel } from '@/components/wickglow/shared/panel-styles';
 import { useFullscreen } from '@/components/wickglow/hooks/use-fullscreen';
@@ -41,7 +41,8 @@ import { StreamStage } from '@/components/wickglow/features/audio/stream-stage';
 import { SessionEndCard } from '@/components/wickglow/features/timer/session-end-card';
 import { TimeText } from '@/components/wickglow/features/timer/time-text';
 import { LogoMark } from '@/components/wickglow/shared/logo';
-import { useTour, useTourTarget } from '@/components/wickglow/features/tour/tour';
+import { useTour, useTourButton, useTourRevealer, useTourTarget } from '@/components/wickglow/features/tour/tour';
+import { waitUntilStill } from '@/components/wickglow/features/tour/measure';
 import { PanelHeading } from '@/components/wickglow/shared/panel-heading';
 import {
   ClockIcon,
@@ -82,6 +83,17 @@ const PANEL_SIDE: Record<PanelId, 'left' | 'right'> = {
   settings: 'right',
 };
 
+// The panel each tour step opens; the welcome and Timer steps open none.
+const TOUR_PANEL: Record<TourStep['id'], PanelId | null> = {
+  welcome: null,
+  timer: null,
+  music: 'music',
+  ambient: 'mixer',
+  scenes: 'scenes',
+  tasks: 'tasks',
+  progress: 'progress',
+};
+
 // Title shown in each panel's heading bar.
 const PANEL_TITLE: Record<PanelId, string> = {
   music: 'Music',
@@ -104,18 +116,30 @@ export function DesktopWickglow() {
   // instead of above the dock, so the field being typed in stays visible.
   const keyboard = useKeyboardInset();
   const [panel, setPanel] = useState<PanelId | null>(null);
-  // The first-run tour points at the dock and the timer, so it closes any open
-  // panel when it starts, and the controls stay up (no zen) while it runs.
+  // The first-run tour opens each step's panel and lights it with the button
+  // that opens it (the Timer step points at the controls with no panel
+  // open), closes the panel when it
+  // ends, and keeps the controls up (no zen) while it runs.
   const tour = useTour();
   const timerTarget = useTourTarget('timer');
   const musicTarget = useTourTarget('music');
+  const ambientTarget = useTourTarget('ambient');
+  const scenesTarget = useTourTarget('scenes');
+  const tasksTarget = useTourTarget('tasks');
   const progressTarget = useTourTarget('progress');
-  // Closed during render when the tour starts (React's "adjust state when a
-  // value changes" pattern), so the panel never shows under its first step.
-  const [tourWas, setTourWas] = useState(tour.active);
-  if (tourWas !== tour.active) {
-    setTourWas(tour.active);
-    if (tour.active) setPanel(null);
+  // The buttons that open those panels, lit beside them so the user sees
+  // where to open each one later.
+  const musicButton = useTourButton('music');
+  const pillsButton = useTourButton('progress');
+  // Panels open, close or grow as their content loads, so wait for the panel
+  // to settle before the tour measures it.
+  useTourRevealer(waitUntilStill);
+  // Set during render when the step changes (React's "adjust state when a
+  // value changes" pattern), so the step's panel is already open under it.
+  const [tourWas, setTourWas] = useState<typeof tour.step>(null);
+  if (tourWas !== tour.step) {
+    setTourWas(tour.step);
+    setPanel(tour.step ? TOUR_PANEL[tour.step] : null);
   }
   // Zen: while focusing with no panel open, the whole UI fades out after 3.5s
   // without input.
@@ -213,7 +237,7 @@ export function DesktopWickglow() {
           </View>
           <Text style={styles.brandText}>Wickglow</Text>
         </Pressable>
-        <View ref={progressTarget} collapsable={false} style={styles.pills}>
+        <View ref={pillsButton} collapsable={false} style={styles.pills}>
           <Pressable accessibilityRole="button" accessibilityLabel={`Streak ${lamp.streak} days. Open progress`} style={styles.pill} onPress={() => togglePanel('progress')}>
             <FlameIcon size={15} color={colors.error} />
             <Text style={styles.pillText}>{lamp.streak}</Text>
@@ -268,7 +292,7 @@ export function DesktopWickglow() {
           screen. Full screen only appears where the browser supports it. */}
       <View style={[styles.dock, { paddingBottom: insets.bottom + 14, opacity: zen ? 0 : 1 }]} pointerEvents={zen ? 'none' : 'auto'}>
         <View style={styles.dockGroup}>
-          <View ref={musicTarget} collapsable={false}>
+          <View ref={musicButton} collapsable={false}>
             <MusicDockButton
               active={panel === 'music'}
               onOpen={() => togglePanel('music')}
@@ -319,7 +343,7 @@ export function DesktopWickglow() {
           pointerEvents="box-none"
           style={[styles.wideWrap, styles.progressWrap, { top: insets.top + 20, bottom: insets.bottom + 84 }]}
         >
-          <View style={[styles.progressScroll, styles.musicScroll, { height: musicHeight }]}>
+          <View ref={musicTarget} collapsable={false} style={[styles.progressScroll, styles.musicScroll, { height: musicHeight }]}>
             <View style={[styles.progressCard, styles.musicCard]}>
               <PanelHeading title={PANEL_TITLE.music} onClose={() => setPanel(null)} />
               <MusicBlock embedSlotRef={embedSlotRef} onEmbedLayout={placeEmbed} />
@@ -336,7 +360,10 @@ export function DesktopWickglow() {
           {/* The card keeps its heading and rounded corners in place; only the
               content scrolls, in a box inset from the card's edges, so the
               scrollbar sits inside the card like the Music card's track list. */}
-          <View style={[styles.progressScroll, styles.cardShell, panel === 'quests' && styles.questsScroll, panel === 'tasks' && [styles.tasksScroll, { height: tasksHeight }]]}>
+          <View
+            ref={panel === 'tasks' ? tasksTarget : panel === 'progress' ? progressTarget : undefined}
+            collapsable={false}
+            style={[styles.progressScroll, styles.cardShell,panel === 'quests' && styles.questsScroll, panel === 'tasks' && [styles.tasksScroll, { height: tasksHeight }]]}>
             <View style={styles.cardHead}>
               <PanelHeading title={PANEL_TITLE[panel]} onClose={() => setPanel(null)} actions={panel === 'progress' ? <AccountChip /> : undefined} />
             </View>
@@ -357,7 +384,10 @@ export function DesktopWickglow() {
       {/* Narrow side cards: mixer, scenes, timer settings. They anchor left or
           right to sit under the dock button that opened them (PANEL_SIDE). */}
       {panel && panel !== 'music' && panel !== 'progress' && panel !== 'quests' && panel !== 'tasks' ? (
-        <View style={[styles.panel, styles[PANEL_SIDE[panel] === 'right' ? 'panelRight' : 'panelLeft'], panel === 'scenes' && styles.scenesPanel, { bottom: sideBottom }, sideMaxHeight != null ? { maxHeight: sideMaxHeight } : null]}>
+        <View
+          ref={panel === 'mixer' ? ambientTarget : panel === 'scenes' ? scenesTarget : undefined}
+          collapsable={false}
+          style={[styles.panel, styles[PANEL_SIDE[panel] === 'right' ? 'panelRight' : 'panelLeft'], panel === 'scenes' && styles.scenesPanel, { bottom: sideBottom }, sideMaxHeight != null ? { maxHeight: sideMaxHeight } : null]}>
           <PanelHeading title={PANEL_TITLE[panel]} onClose={() => setPanel(null)} />
           <ScrollView style={styles.panelBody} contentContainerStyle={styles.panelContent}>
             {panel === 'mixer' ? <MixerBlock /> : null}
@@ -487,12 +517,12 @@ function MusicDockButton({ active, onOpen, onPause }: { active: boolean; onOpen:
 
 // A round dock icon. Like the phone's DockItem, it recolors its icon child with
 // cloneElement (dark when active, light otherwise) and can show an accent dot.
-// `tour` marks it as the part a tour step points at.
+// `tour` marks it as the button that opens a tour step's panel.
 function DockButton({ children, active, dot, onPress, label, tour }: { children: React.ReactNode; active: boolean; dot?: boolean; onPress: () => void; label: string; tour?: TourTarget }) {
   const { sceneTheme } = useWickglow();
-  const target = useTourTarget(...(tour ? [tour] : []));
+  const button = useTourButton(...(tour ? [tour] : []));
   return (
-    <Pressable ref={target} collapsable={false} accessibilityLabel={label} onPress={onPress} style={[styles.ib, active && styles.ibOn]}>
+    <Pressable ref={button} collapsable={false} accessibilityLabel={label} onPress={onPress} style={[styles.ib, active && styles.ibOn]}>
       {React.isValidElement(children)
         ? React.cloneElement(children as React.ReactElement<{ color?: string }>, { color: active ? colors.textInverse : colors.textPrimary })
         : children}

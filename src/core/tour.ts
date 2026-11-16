@@ -80,7 +80,7 @@ export function tourSteps(layout: TourLayout): TourStep[] {
       target: 'progress',
       title: desktop ? 'Progress' : 'Stats',
       body: desktop
-        ? 'Finish sessions to earn XP and keep your streak. Open these to see your progress.'
+        ? 'Finish sessions to earn XP and keep your streak. The streak and level at the top open this any time.'
         : 'Finish sessions to earn XP and keep your streak.',
     },
   ];

@@ -137,10 +137,10 @@ Behavior:
   1. Welcome to Wickglow: one line on what the app is (focus sessions, calm music, XP for showing up).
   2. Timer: "Start a focus session here. Pause or skip any time."
   3. Music: "Pick a lofi track or play your own files." On desktop, it also says "Paste a streaming link to play it here."
-  4. Ambient sounds: "Mix in rain, cafe and other sounds behind your music." On desktop it points at the Ambient mixer dock button. On phone it points at the Sounds tab, where Ambient sits beside Tracks.
+  4. Ambient sounds: "Mix in rain, cafe and other sounds behind your music." On desktop it opens and points at the Ambient mixer panel. On phone it points at the Sounds tab, where Ambient sits beside Tracks.
   5. Scenes (desktop) or Mood (phone and tablet): "Change the view behind your timer." / "Change the look behind your timer."
   6. Tasks: "Add what you are working on, then pick one to focus on."
-  7. Progress (desktop, the streak, minutes and level pills) or Stats (phone tab, tablet section): "Finish sessions to earn XP and keep your streak."
+  7. Progress (desktop, the Progress panel the top pills open) or Stats (phone tab, tablet section): "Finish sessions to earn XP and keep your streak."
 
   Progress and tasks were one step in the first plan; they are two because they sit in different places on every layout.
 - Shown once, with Back and Skip on every step and Escape on the web. The last step says it can be replayed from Timer settings, where a "Show tour again" line sits just above "About Wickglow" (on every platform).
@@ -149,9 +149,11 @@ Decided 2026-11-15 (owner):
 
 - Anyone who has not seen it on this device sees it, new or existing users.
 - "Seen" is stored on the device only (`wickglow:tour` in AsyncStorage), never synced. Finishing or skipping stores it. If storage cannot be read, the tour does not start.
-- On phone, the Music and Ambient steps both point at the Sounds tab; the tour does not open it.
+- On phone, the Music and Ambient steps both point at the Sounds tab.
 
-Built 2026-11-15: steps and words in `src/core/tour.ts`; the provider, overlay and placement in `components/wickglow/features/tour/`. Each layout marks its parts with `useTourTarget`, closes its panel or sheet and holds off zen while the tour runs. The tablet scrolls whichever column holds the part to the top and puts the card to its left.
+Changed 2026-11-16 (owner): each step opens its panel while it shows. On desktop the Music, Ambient mixer, Scenes, Tasks and Progress panels open and the step lights both the panel and the button that opens it (its dock button; for Progress, the top pills), so the user sees where to open it later (`useTourButton`). A card with no room beside a wide panel sits against the window edge on the roomier side, moved up or down off the lit button. On phone the matching sheet tab opens behind the dim (Sounds on Tracks, then on Ambient, Mood, Tasks, Stats) and the step still points at the tab button (Ambient: the Ambient button). The Timer step closes the panel or sheet, and so does the tour's end. The tablet shows every part in its side column already, so nothing changes there.
+
+Built 2026-11-15: steps and words in `src/core/tour.ts`; the provider, overlay and placement in `components/wickglow/features/tour/`. Each layout marks its parts with `useTourTarget`, opens the step's panel or sheet tab (`TOUR_PANEL` in `desktop.tsx`, `TOUR_SHEET` in `mobile.tsx`) and holds off zen while the tour runs. The tablet scrolls whichever column holds the part to the top and puts the card to its left.
 
 ## v3 (dropped)
 

@@ -1,4 +1,4 @@
-import type { ImageSourcePropType } from 'react-native';
+import type { ImageSourcePropType } from "react-native";
 
 // The landing page's links and copy (roadmap #12). Kept apart from the layout
 // so a link or a sentence changes in one place.
@@ -8,11 +8,12 @@ import type { ImageSourcePropType } from 'react-native';
  * ("Anyone with the link"). It opens the folder that holds the APK, so a new
  * build can replace the file without changing this link.
  */
-export const APK_URL = 'https://drive.google.com/drive/folders/16YLvSxAZZvNAGfRcZ5KzufVkMgB3-PLh?usp=sharing';
 
-export const APP_VERSION = '1.0.0';
+export const APK_URL = "https://drive.google.com/drive/folders/16YLvSxAZZvNAGfRcZ5KzufVkMgB3-PLh?usp=sharing";
 
-export const SOURCE_URL = 'https://github.com/c-ent/Wickglow';
+export const APP_VERSION = "1.0.0";
+
+export const SOURCE_URL = "https://github.com/c-ent/Wickglow";
 
 /**
  * The desktop screenshots in the gallery, in order; the first is shown first.
@@ -34,50 +35,52 @@ export type GallerySlide = {
 };
 
 /** The address shown in the gallery window's title bar. */
-export const GALLERY_ADDRESS = 'wickglow.vercel.app';
+export const GALLERY_ADDRESS = "wickglow.vercel.app";
 
 export const GALLERY: readonly GallerySlide[] = [
   {
-    id: 'meadow',
-    label: 'Pixel art',
-    caption: 'Pick a scene to study in, like a rainy pixel-art meadow.',
-    source: require('@/assets/landing/desktop.webp') as ImageSourcePropType,
-    alt: 'Wickglow on desktop: a 25:00 timer over a rainy pixel-art meadow, with the Scenes picker open',
+    id: "meadow",
+    label: "Pixel art",
+    caption: "Pick a scene to study in, like a rainy pixel-art meadow.",
+    source: require("@/assets/landing/desktop.webp") as ImageSourcePropType,
+    alt: "Wickglow on desktop: a 25:00 timer over a rainy pixel-art meadow, with the Scenes picker open",
     ratio: 1600 / 759,
   },
   {
-    id: 'tasks',
-    label: 'Tasks',
-    caption: 'Break study into tasks and subtasks, then pick one to focus on under the timer.',
-    source: require('@/assets/landing/desktop-3.webp') as ImageSourcePropType,
-    alt: 'Wickglow on desktop with the Tasks panel open: a task split into four subtasks above a finished one',
+    id: "tasks",
+    label: "Tasks",
+    caption:
+      "Break study into tasks and subtasks, then pick one to focus on under the timer.",
+    source: require("@/assets/landing/desktop-3.webp") as ImageSourcePropType,
+    alt: "Wickglow on desktop with the Tasks panel open: a task split into four subtasks above a finished one",
     ratio: 1600 / 760,
   },
   {
-    id: 'music',
-    label: 'Music',
-    caption: 'Play the built-in lofi playlist, or paste a Spotify, YouTube or Apple Music link.',
-    source: require('@/assets/landing/desktop-2.webp') as ImageSourcePropType,
-    alt: 'Wickglow on desktop with the Music panel open: the lofi playlist beside a pasted Spotify playlist',
+    id: "music",
+    label: "Music",
+    caption:
+      "Play the built-in lofi playlist, or paste a Spotify, YouTube or Apple Music link.",
+    source: require("@/assets/landing/desktop-2.webp") as ImageSourcePropType,
+    alt: "Wickglow on desktop with the Music panel open: the lofi playlist beside a pasted Spotify playlist",
     ratio: 1600 / 756,
   },
 ];
 
 /** The phone screenshot, shown beside the Android download. */
 export const PHONE_SHOT = {
-  source: require('@/assets/landing/mobile.webp') as ImageSourcePropType,
-  alt: 'Wickglow on a phone: a lit candle above a 24:59 focus timer, with the Pause button',
+  source: require("@/assets/landing/mobile.webp") as ImageSourcePropType,
+  alt: "Wickglow on a phone: a lit candle above a 24:59 focus timer, with the Pause button",
   ratio: 374 / 816,
 };
 
 /** The slim bar under the hero: four short promises, each with a small icon. */
-export type StripIconName = 'check' | 'shield' | 'user' | 'bell';
+export type StripIconName = "check" | "shield" | "user" | "bell";
 
 export const STRIP_ITEMS: readonly { icon: StripIconName; label: string }[] = [
-  { icon: 'check', label: 'Free' },
-  { icon: 'shield', label: 'No ads, no tracking' },
-  { icon: 'user', label: 'No account needed' },
-  { icon: 'bell', label: 'No harsh alarm, just a soft chime' },
+  { icon: "check", label: "Free" },
+  { icon: "shield", label: "No ads, no tracking" },
+  { icon: "user", label: "No account needed" },
+  { icon: "bell", label: "No harsh alarm" },
 ];
 
 /**
@@ -86,30 +89,30 @@ export const STRIP_ITEMS: readonly { icon: StripIconName; label: string }[] = [
  */
 export const BENTO = {
   candle: {
-    badge: 'Candle on Android',
-    title: 'A Pomodoro timer with a candle',
-    body: 'Focus, short break and long break. The candle burns down as the session runs, and the time stays right even while your phone sleeps.',
-    times: ['25:00', '12:30', '02:30'],
+    badge: "Candle on Android",
+    title: "A Pomodoro timer with a candle",
+    body: "Focus, short break and long break. The candle burns down as the session runs, and the time stays right even while your phone sleeps.",
+    times: ["25:00", "12:30", "02:30"],
   },
   xp: {
-    title: 'XP, levels and streaks',
-    body: 'Every focus minute earns XP. Keep a daily streak going and finish three small quests each day.',
+    title: "XP, levels and streaks",
+    body: "Every focus minute earns XP. Keep a daily streak going and finish three small quests each day.",
   },
   tasks: {
-    title: 'Tasks to focus on',
-    body: 'Add tasks with due dates and subtasks, then pick one to keep under the timer while you work.',
+    title: "Tasks to focus on",
+    body: "Add tasks with due dates and subtasks, then pick one to keep under the timer while you work.",
   },
   sounds: {
-    title: 'Lofi and ambient sounds',
-    body: 'Fourteen lofi tracks and nine ambient loops to mix, from rain to a fireplace to a café. Add your own music on Android.',
+    title: "Lofi and ambient sounds",
+    body: "Fourteen lofi tracks and nine ambient loops to mix, from rain to a fireplace to a café. Add your own music on Android.",
   },
   calendar: {
-    title: 'See your study time',
-    body: 'A month calendar shades each day by the minutes you studied, next to your last seven days.',
+    title: "See your study time",
+    body: "A month calendar shades each day by the minutes you studied, next to your last seven days.",
   },
   sync: {
-    title: 'Your progress on every device',
-    body: 'An optional account, with email or Google, keeps XP, streaks, tasks and history in sync. Everything works without one.',
+    title: "Your progress on every device",
+    body: "An optional account, with email or Google, keeps XP, streaks, tasks and history in sync. Everything works without one.",
   },
 } as const;
 
@@ -119,10 +122,10 @@ export const BENTO = {
  * widget reads `SAMPLE_LEVEL` (`web-helpers.ts`), the same sample as the bento card.
  */
 export const HERO_SAMPLE = {
-  time: '25:00',
-  timeCaption: 'FOCUS · 1 OF 4',
-  streakTitle: 'Daily streak',
-  streakCaption: '3 quests today',
-  mixLabel: 'AMBIENT MIX',
-  mix: 'Rain · Fireplace · Café',
+  time: "25:00",
+  timeCaption: "FOCUS · 1 OF 4",
+  streakTitle: "Daily streak",
+  streakCaption: "3 quests today",
+  mixLabel: "AMBIENT MIX",
+  mix: "Rain · Fireplace · Café",
 } as const;

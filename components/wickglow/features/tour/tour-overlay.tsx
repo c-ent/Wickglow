@@ -20,7 +20,7 @@ import {
   TimerIcon,
 } from '@/components/wickglow/shared/icons';
 import { measureInWindow, type TourNode } from './measure';
-import { DEFAULT_SIDES, EDGE, placeCard, visibleRect, type CardSide, type Rect, type Size } from './placement';
+import { DEFAULT_SIDES, dimPieces, EDGE, placeCard, visibleRect, type CardSide, type Rect, type Size } from './placement';
 
 // Room between the target and the glowing ring around it.
 const RING_PAD = 6;
@@ -60,6 +60,8 @@ interface TourOverlayProps {
   index: number;
   count: number;
   nodeFor: (target: TourTarget) => TourNode | null;
+  /** The button that opens the step's part, lit beside it, or null. */
+  buttonFor: (target: TourTarget) => TourNode | null;
   reveal: (node: TourNode) => Promise<void>;
   onNext: () => void;
   onBack: () => void;
@@ -69,11 +71,12 @@ interface TourOverlayProps {
 /**
  * One step of the tour: the screen dims softly except for a lit cut-out around
  * the part the step is about, ringed in the layout accent, and a small glass
- * card beside it says what that part does. The welcome step has no cut-out and
+ * card beside it says what that part does. Where a step opens a panel, the
+ * button that opens it is lit and ringed too. The welcome step has no cut-out and
  * its card sits in the middle. The overlay takes every touch, so the app
  * behind it cannot be pressed until the tour moves on or is skipped.
  */
-export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNext, onBack, onSkip }: TourOverlayProps) {
+export function TourOverlay({ layout, step, index, count, nodeFor, buttonFor, reveal, onNext, onBack, onSkip }: TourOverlayProps) {
   const { sceneTheme, moodTheme } = useWickglow();
   const accent = layout === 'desktop' ? sceneTheme.accent : moodTheme.accent;
   const { width, height } = useWindowDimensions();
@@ -82,7 +85,7 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
   const cardWidth = Math.min(CARD_MAX_WIDTH, width - EDGE * 2);
   // The measured target for a step, tagged with that step so a stale result
   // from the step before is never drawn.
-  const [measured, setMeasured] = useState<{ index: number; rect: Rect | null } | null>(null);
+  const [measured, setMeasured] = useState<{ index: number; rect: Rect | null; button: Rect | null } | null>(null);
   const [cardHeight, setCardHeight] = useState(180);
   const shown = measured?.index === index;
   const opacity = useSharedValue(0);
@@ -125,16 +128,20 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
     const node = step.target ? nodeFor(step.target) : null;
     void (async () => {
       let rect: Rect | null = null;
+      let button: Rect | null = null;
       if (node) {
         await reveal(node);
         rect = await measureInWindow(node);
+        // Asked for after the reveal, so a button that mounts with the panel is there.
+        const opener = step.target ? buttonFor(step.target) : null;
+        if (rect && opener) button = await measureInWindow(opener);
       }
-      if (live) setMeasured({ index, rect });
+      if (live) setMeasured({ index, rect, button });
     })();
     return () => {
       live = false;
     };
-  }, [height, index, nodeFor, reveal, step.target, width]);
+  }, [buttonFor, height, index, nodeFor, reveal, step.target, width]);
 
   // The ring and card fade in once the step is placed (at once under reduced motion).
   useEffect(() => {
@@ -180,7 +187,9 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
   const screen: Size = { width, height };
   const target = shown ? measured.rect : null;
   const hole = target ? visibleRect(target, screen, RING_PAD) : null;
-  const place = placeCard(hole, screen, { width: cardWidth, height: cardHeight }, layout === 'tablet' ? TABLET_SIDES : DEFAULT_SIDES);
+  const buttonHole = hole && measured?.button ? visibleRect(measured.button, screen, RING_PAD) : null;
+  const holes = hole ? (buttonHole ? [hole, buttonHole] : [hole]) : [];
+  const place = placeCard(hole, screen, { width: cardWidth, height: cardHeight }, layout === 'tablet' ? TABLET_SIDES : DEFAULT_SIDES, buttonHole);
   // The tallest the card may be: the screen between the safe-area insets. The
   // welcome card scrolls when its content is taller (large text, a short window).
   const maxCardHeight = Math.max(120, height - insets.top - insets.bottom - EDGE * 2);
@@ -196,34 +205,30 @@ export function TourOverlay({ layout, step, index, count, nodeFor, reveal, onNex
 
   return (
     <View ref={rootRef} style={styles.root} pointerEvents="auto">
-      {/* The dim: four pieces around the cut-out, or the whole screen while a
-          step is being placed and for the welcome card. */}
-      {hole ? (
-        <>
-          <View style={[styles.dim, { left: 0, top: 0, width, height: hole.y }]} />
-          <View style={[styles.dim, { left: 0, top: hole.y + hole.height, width, height: height - hole.y - hole.height }]} />
-          <View style={[styles.dim, { left: 0, top: hole.y, width: hole.x, height: hole.height }]} />
-          <View style={[styles.dim, { left: hole.x + hole.width, top: hole.y, width: width - hole.x - hole.width, height: hole.height }]} />
-          <Reanimated.View
-            pointerEvents="none"
-            style={[
-              styles.ring,
-              fadeStyle,
-              {
-                left: hole.x,
-                top: hole.y,
-                width: hole.width,
-                height: hole.height,
-                borderColor: accent,
-                borderRadius: Math.min(radius.lg, hole.height / 2, hole.width / 2),
-                boxShadow: `0 0 28px ${accent}`,
-              },
-            ]}
-          />
-        </>
-      ) : (
-        <View style={[styles.dim, StyleSheet.absoluteFill]} />
-      )}
+      {/* The dim: pieces around the cut-outs (the whole screen while a step
+          is being placed and for the welcome card), then a ring per cut-out. */}
+      {dimPieces(holes, screen).map((piece) => (
+        <View key={`${piece.x},${piece.y}`} style={[styles.dim, { left: piece.x, top: piece.y, width: piece.width, height: piece.height }]} />
+      ))}
+      {holes.map((cut, ring) => (
+        <Reanimated.View
+          key={ring}
+          pointerEvents="none"
+          style={[
+            styles.ring,
+            fadeStyle,
+            {
+              left: cut.x,
+              top: cut.y,
+              width: cut.width,
+              height: cut.height,
+              borderColor: accent,
+              borderRadius: Math.min(radius.lg, cut.height / 2, cut.width / 2),
+              boxShadow: `0 0 28px ${accent}`,
+            },
+          ]}
+        />
+      ))}
 
       {shown ? (
         <Reanimated.View
